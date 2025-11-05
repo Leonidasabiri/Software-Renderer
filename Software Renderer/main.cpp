@@ -111,8 +111,8 @@ vector2_t convert_to_screen_space(vector4_t pos, int width, int height)
 {
     vector2_t screen_space;
 
-    screen_space.x = (pos.x /(pos.z + 1) + 1) * width/2;
-    screen_space.y = (pos.y/(-pos.z - 1) + 1) * height/2;
+    screen_space.x = (pos.x /(pos.z) + 1) * width/2;
+    screen_space.y = (pos.y/(-pos.z) + 1) * height/2;
 
     return screen_space;
 }
@@ -373,16 +373,17 @@ int main(int argc, char* argv[])
 
     float triangle[] =
     {
-        0.2f,  0.2f, 0.2f,  1.0f, 1.0f, 0.0f,   // top right
-        0.2f, -0.2f, 0.2f,  1.0f, 1.0f, 0.0f,   // bottom right
-       -0.2f, -0.2f, 0.2f,  0.0f, 1.0f, 0.0f, // bottom left
-       -0.2f,  0.2f, 0.2f,  0.0f, 1.0f, 0.0f,  // top left 
+        // front
+        0.2f,  0.2f, 0.2f,  1.0f, 0.0f, 0.0f,   // top right
+        0.2f, -0.2f, 0.2f,  0.0f, 1.0f, 0.0f,   // bottom right
+       -0.2f, -0.2f, 0.2f,  0.0f, 0.0f, 1.0f, // bottom left
+       -0.2f,  0.2f, 0.2f,  1.0f, 0.0f, 0.0f,  // top left 
 
         //back
         0.2f,  0.2f, -0.2f, 1.0f, 0.0f, 0.0f,  // top right
-        0.2f, -0.2f, -0.2f, 0.0f, 0.0f, 1.0f, // bottom right
+        0.2f, -0.2f, -0.2f, 0.0f, 1.0f, 0.0f, // bottom right
        -0.2f, -0.2f, -0.2f, 0.0f, 0.0f, 1.0f,// bottom left
-       -0.2f,  0.2f, -0.2f, 1.0f, 1.0f, 0.0f// top left 
+       -0.2f,  0.2f, -0.2f, 1.0f, 0.0f, 0.0f// top left 
     };
 
     int indecies[] = {
@@ -412,11 +413,37 @@ int main(int argc, char* argv[])
 
     SDL_LockTexture(surface, 0, &pixels, &pitch);
 
+    float fov = 90.0;
+    fov = rad_to_deg(fov/2);
+    float near_plane = 0.01, far_plane = 1000.0;
+    float s = 1 / tan(fov);
+
+    matrix4_t perspective_matrix =
+    {
+        {s, 0, 0, 0},
+        {0, s, 0, 0},
+        {0, 0, -far_plane/(far_plane - near_plane), -1},
+        {0, 0, -far_plane * near_plane / (far_plane - near_plane), 0}
+    };
+
+    matrix4_t view_matrix =
+    {
+        {1, 0, 0, 0},
+        {0, 1, 0, 0},
+        {0, 0,-2, 0},
+        {0, 0, 0, 1}
+    };
+
     while(1)
     {
         int mouseX, mouseY;
         SDL_GetMouseState(&mouseX, &mouseY);
-        angle = mouseY; anglez = mouseX;
+
+        if (-mouseY <= -250 || -mouseY <= 250)
+            angle = -(mouseY); 
+        anglez = -mouseX;
+
+
         matrix4_t rotationx = {
             { 1,                       0,                        0, 0},
             { 0, cos(rad_to_deg(angle)),  -sin(rad_to_deg(angle)), 0},
@@ -465,6 +492,14 @@ int main(int argc, char* argv[])
                 vector4_t vertex2 = multiply_matrix_vector(rotation, { triangle[ind2x], triangle[ind2y], triangle[ind2z], 1 });
                 vector4_t vertex3 = multiply_matrix_vector(rotation, { triangle[ind3x], triangle[ind3y], triangle[ind3z], 1 });
 
+                vertex1 = multiply_matrix_vector(perspective_matrix, vertex1);
+                vertex2 = multiply_matrix_vector(perspective_matrix, vertex2);
+                vertex3 = multiply_matrix_vector(perspective_matrix, vertex3);
+
+                vertex1 = multiply_matrix_vector(view_matrix, vertex1);
+                vertex2 = multiply_matrix_vector(view_matrix, vertex2);
+                vertex3 = multiply_matrix_vector(view_matrix, vertex3);
+
                 vector2_t point1 = convert_to_screen_space(vertex1, width, height);
                 vector2_t point2 = convert_to_screen_space(vertex2, width, height);
                 vector2_t point3 = convert_to_screen_space(vertex3, width, height);
@@ -480,8 +515,11 @@ int main(int argc, char* argv[])
                     {triangle[ind3x + 3] * 255, triangle[ind3y + 3] * 255, triangle[ind3z + 3] * 255, 255 }
                 };
 
-                drawTriangle(point1, point2, point3, pixs, width, height, col, FILLED, zbuffer, -vertex1.z + 0.6, -vertex2.z + 0.6, -vertex3.z + 0.6);
-                //drawTriangle(point1, point2, point3, pixs, width, height, col, WIREFRAME, zbuffer, -vertex1.z + 0.6, -vertex2.z + 0.6, -vertex3.z + 0.6);
+                drawTriangle(point1, point2, point3, pixs, width,
+                            height, col, FILLED, zbuffer, 
+                            -vertex1.z, -vertex2.z, -vertex3.z);
+                //drawTriangle(point1, point2, point3, pixs, width, height, col, 
+                //            WIREFRAME, zbuffer, vertex1.z, vertex2.z, vertex3.z);
             }
         }
         SDL_UnlockTexture(surface);
