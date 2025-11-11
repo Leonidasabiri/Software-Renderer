@@ -89,6 +89,19 @@ vector2_t sub_vector(vector2_t vector1, vector2_t vector2)
     return { vector1.x - vector2.x, vector1.y - vector2.y };
 }
 
+vector4_t sub_vector4(vector4_t vector1, vector4_t vector2)
+{
+    return { vector1.x - vector2.x, 
+             vector1.y - vector2.y,
+             vector1.z - vector2.z,
+             1.0};
+}
+
+float dot_product(vector4_t vector1, vector4_t vector2)
+{
+    return vector1.x * vector2.x + vector1.y * vector2.y + vector1.z * vector2.z;
+}
+
 vector4_t multiply_matrix_vector(matrix4_t matrix4_1, vector4_t vector)
 {
     return
@@ -124,6 +137,17 @@ float cross_product_2d(vector2_t vector1, vector2_t vector2)
     return vector1.x * vector2.y - vector1.y * vector2.x;
 }
 
+vector4_t cross_product_4d(vector4_t vector1, vector4_t vector2)
+{
+    return
+    {
+        vector1.y * vector2.z - vector1.z * vector2.y,
+        vector1.z * vector2.x - vector1.x * vector2.z,
+        vector1.x * vector2.y - vector1.y * vector2.x,
+        1.0
+    };
+}
+
 float triangle_surface(vector2_t pos1, vector2_t pos2, vector2_t pos3)
 {
     return cross_product_2d(sub_vector(pos1, pos2), sub_vector(pos3, pos2)) * 1 / 2;
@@ -133,8 +157,12 @@ vector2_t convert_to_screen_space(vector4_t pos, int width, int height)
 {
     vector2_t screen_space;
 
-    screen_space.x = (pos.x + 1) * width / 2;
-    screen_space.y = (-pos.y + 1) * height/2;
+    float z = pos.z;
+
+    if (z == 0) z = 1;
+
+    screen_space.x =  (pos.x/z + 1) * width/2;
+    screen_space.y = (-pos.y/z + 1) * height/2;
 
     return screen_space;
 }
@@ -259,7 +287,7 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
     case FILLED:
         for (float y = points[0].y; y <= points[1].y; y++)
         {
-            for (int x = startx; x <= endx; x++)
+            for (int x = startx; x < endx; x++)
             {
                 vector2_t point = { x, y };
                 float surface1 = triangle_surface(point, point3, point2) / full_surface;
@@ -282,7 +310,7 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
                     draw_pixel(x, y, buffer, width, height, final_color);
                 }
             }
-            for (int x = endx; x <= startx; x++)
+            for (int x = endx; x < startx; x++)
             {
                 vector2_t point = { x, y };
                 float surface1 = triangle_surface(point, point3, point2) / full_surface;
@@ -318,7 +346,7 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
 
         for (float y = points[1].y; y < points[2].y; y++)
         {
-            for (int x = startx; x < endx; x++)
+            for (int x = startx; x <= endx; x++)
             {
                 vector2_t point = { x, y };
                 float surface1 = triangle_surface(point, point3, point2) / full_surface;
@@ -341,7 +369,7 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
                 }
 
             }
-            for (int x = endx; x < startx; x++)
+            for (int x = endx; x <= startx; x++)
             {
                 vector2_t point = { x, y };
                 float surface1 = triangle_surface(point, point3, point2) / full_surface;
@@ -379,7 +407,7 @@ float rad_to_deg(float angle)
 
 int main(int argc, char* argv[])
 {
-    const int width = 580;
+    const int width = 720;
     const int height = 720;
 
     SDL_Init(SDL_INIT_VIDEO);
@@ -391,7 +419,7 @@ int main(int argc, char* argv[])
     int   pitch;
     float* zbuffer = (float*)malloc(width * height * sizeof(width * height));
 
-    float angle = 0;
+    float angle = 180;
     float anglez = 0;
 
     float stride = 6;
@@ -414,7 +442,7 @@ int main(int argc, char* argv[])
         {0, 0, 0, 1}
     };
 
-    vector4_t transform = {0.0, 0.0, 1.0, 1.0};
+    vector4_t transform = {0.0, 0.12, -0.7, 1.0};
 
     matrix4_t transform_matrix =
     {
@@ -447,9 +475,9 @@ int main(int argc, char* argv[])
         int mouseX, mouseY;
         SDL_GetMouseState(&mouseX, &mouseY);
 
-        if (-mouseY <= -250 || -mouseY <= 250)
-            angle = -(mouseY);
-        anglez = -mouseX;
+        //if (-mouseY <= -250 || -mouseY <= 250)
+        //angle += 0.1;
+        anglez+=2;
 
         matrix4_t rotationx = {
             { 1,                       0,                        0, 0},
@@ -494,24 +522,28 @@ int main(int argc, char* argv[])
 
             for (int i = 0; i < faces_numbers; i++)
             {
-                //continue;
-
-
-                vector4_t vertex1 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[0]/10, meshes[i].vertecies[1] / 10, meshes[i].vertecies[2] / 10, 1 });
-                vector4_t vertex2 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[3] / 10, meshes[i].vertecies[4] / 10, meshes[i].vertecies[5] / 10, 1 });
-                vector4_t vertex3 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[6] / 10, meshes[i].vertecies[7] / 10, meshes[i].vertecies[8] / 10, 1 });
+                vector4_t vertex1 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[0]/10, meshes[i].vertecies[1]/10, meshes[i].vertecies[2]/10, 1 });
+                vector4_t vertex2 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[3]/10, meshes[i].vertecies[4]/10, meshes[i].vertecies[5]/10, 1 });
+                vector4_t vertex3 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[6]/10, meshes[i].vertecies[7]/10, meshes[i].vertecies[8]/10, 1 });
 
                 //vertex1 = multiply_matrix_vector(perspective_matrix, vertex1);
                 //vertex2 = multiply_matrix_vector(perspective_matrix, vertex2);
                 //vertex3 = multiply_matrix_vector(perspective_matrix, vertex3);
 
-                //vertex1 = multiply_matrix_vector(transform_matrix, vertex1);
-                //vertex2 = multiply_matrix_vector(transform_matrix, vertex2);
-                //vertex3 = multiply_matrix_vector(transform_matrix, vertex3);
-
                 vertex1 = multiply_matrix_vector(rotation, vertex1);
                 vertex2 = multiply_matrix_vector(rotation, vertex2);
                 vertex3 = multiply_matrix_vector(rotation, vertex3);
+
+                vertex1 = multiply_matrix_vector(transform_matrix, vertex1);
+                vertex2 = multiply_matrix_vector(transform_matrix, vertex2);
+                vertex3 = multiply_matrix_vector(transform_matrix, vertex3);
+
+
+                // calculate normals here for face culling
+                vector4_t normal = cross_product_4d(sub_vector4(vertex1, vertex2), sub_vector4(vertex1, vertex3));
+
+                if (dot_product(normal, {0.0, 0.0, -1.0, 1.0}) <= 0.0)  // 
+                    continue;
 
                 //vertex1 = multiply_matrix_vector(view_matrix, vertex1);
                 //vertex2 = multiply_matrix_vector(view_matrix, vertex2);
