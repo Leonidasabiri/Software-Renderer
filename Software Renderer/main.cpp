@@ -405,6 +405,13 @@ float rad_to_deg(float angle)
     return 3.14 / 180 * angle;
 }
 
+vector4_t normalize_vector(vector4_t vector)
+{
+    float length = sqrt(dot_product(vector, vector));
+
+    return {vector.x/length,vector.y/length, vector.z/length, 1};
+}
+
 int main(int argc, char* argv[])
 {
     const int width = 720;
@@ -456,7 +463,7 @@ int main(int argc, char* argv[])
    
     float aspect_ratio = (float)width/(float)height;
     
-    mesh_t* meshes = extract_meshes("utah.obj");
+    mesh_t* meshes = extract_meshes("cube.obj");
 
     //return 0;
     while (1)
@@ -476,8 +483,8 @@ int main(int argc, char* argv[])
         SDL_GetMouseState(&mouseX, &mouseY);
 
         //if (-mouseY <= -250 || -mouseY <= 250)
-        //angle += 0.1;
-        anglez+=2;
+        angle = mouseY;
+        anglez = mouseX;
 
         matrix4_t rotationx = {
             { 1,                       0,                        0, 0},
@@ -522,9 +529,9 @@ int main(int argc, char* argv[])
 
             for (int i = 0; i < faces_numbers; i++)
             {
-                vector4_t vertex1 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[0]/10, meshes[i].vertecies[1]/10, meshes[i].vertecies[2]/10, 1 });
-                vector4_t vertex2 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[3]/10, meshes[i].vertecies[4]/10, meshes[i].vertecies[5]/10, 1 });
-                vector4_t vertex3 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[6]/10, meshes[i].vertecies[7]/10, meshes[i].vertecies[8]/10, 1 });
+                vector4_t vertex1 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[0]/7, meshes[i].vertecies[1]/7, meshes[i].vertecies[2]/7, 1 });
+                vector4_t vertex2 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[3]/7, meshes[i].vertecies[4]/7, meshes[i].vertecies[5]/7, 1 });
+                vector4_t vertex3 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[6]/7, meshes[i].vertecies[7]/7, meshes[i].vertecies[8]/7, 1 });
 
                 //vertex1 = multiply_matrix_vector(perspective_matrix, vertex1);
                 //vertex2 = multiply_matrix_vector(perspective_matrix, vertex2);
@@ -540,9 +547,9 @@ int main(int argc, char* argv[])
 
 
                 // calculate normals here for face culling
-                vector4_t normal = cross_product_4d(sub_vector4(vertex1, vertex2), sub_vector4(vertex1, vertex3));
+                vector4_t normal = normalize_vector(cross_product_4d(sub_vector4(vertex1, vertex3), sub_vector4(vertex1, vertex2)));
 
-                if (dot_product(normal, {0.0, 0.0, -1.0, 1.0}) <= 0.0)  // 
+                if (dot_product(normal, {0.0, 0.0, -1.0, 1.0}) > 0.0)  // 
                     continue;
 
                 //vertex1 = multiply_matrix_vector(view_matrix, vertex1);
@@ -565,11 +572,12 @@ int main(int argc, char* argv[])
                 vector2_t point2 = convert_to_screen_space(vertex2, width, height);
                 vector2_t point3 = convert_to_screen_space(vertex3, width, height);
 
+
                 color_t col[3] =
                 {
-                    {255, 0, 0, 255},
-                    {0, 255, 0, 255},
-                    {0, 0, 255, 255}
+                    { 255, 0, 0, 255  },
+                    { 0  , 255, 0, 255  },
+                    { 0  , 0, 255, 255  }
                 };
 
                 drawTriangle(point1, point2, point3, pixs, width, height, col, FILLED, zbuffer, vertex1.z, vertex2.z, vertex3.z);

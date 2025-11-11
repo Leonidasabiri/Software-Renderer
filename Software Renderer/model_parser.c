@@ -24,9 +24,7 @@ mesh_t *extract_meshes(const char* model_path)
 	int file_size = ftell(file_path);
 	char* c = (char*)malloc((file_size + 1));
 	c[file_size] = '\0';
-
 	fseek(file_path, 0, SEEK_SET);
-
 	fread(c, 1, file_size, file_path);
 
 	int uv_numbers = 0;
@@ -162,22 +160,9 @@ mesh_t *extract_meshes(const char* model_path)
 
 	faces_numbers = v_indecies_index / 3;
 
-	//printf("%d\n", faces_numbers);
-
-	//for (int i = 0; i < v_indecies_index; i += 3)
-	//{
-	//	printf("%d %d %d\n", v_indecies[i], v_indecies[i + 1], v_indecies[i + 2]);
-	//}
-
-	//for (int i = 0; i < index_v; i += 3)
-	//{
-	//	printf("%f %f %f\n", vertecies[i], vertecies[i + 1], vertecies[i + 2]);
-	//}
-
 	int i = 0;
 	for (int vn = 0; vn < v_indecies_index; vn += 3)
 	{
-		//continue;
 		// v1
 		meshes[i].vertecies[0] = vertecies[(v_indecies[vn + 0] - 1) * 3 + 0];
 		meshes[i].vertecies[1] = vertecies[(v_indecies[vn + 0] - 1) * 3 + 1];
@@ -193,10 +178,8 @@ mesh_t *extract_meshes(const char* model_path)
 		meshes[i].vertecies[7] = vertecies[(v_indecies[vn + 2] - 1) * 3 + 1];
 		meshes[i].vertecies[8] = vertecies[(v_indecies[vn + 2] - 1) * 3 + 2];
 
-		//printf("%d %d %d\n", v_indecies[vn + 0], v_indecies[vn + 1], v_indecies[vn + 2]);
 		i++;
 	}
-	//printf("meshes: %d\n", index_v);
 
 	return meshes;
 }
