@@ -4,7 +4,6 @@
 #include <math.h>
 #include <stdlib.h>
 
-
 typedef struct
 {
 	float vertecies[9];
@@ -12,12 +11,14 @@ typedef struct
 	float uvs[6];
 }mesh_t;
 
-int main()
-{
-	FILE* file_path = fopen("utah.obj", "rb");
+int vertex_numbers = 0;
+int faces_numbers = 0;
 
-	if (!file_path)
-		return 1;
+mesh_t *extract_meshes(const char* model_path)
+{
+	FILE* file_path;
+	
+	fopen_s(&file_path, model_path, "rb");
 
 	fseek(file_path, 0, SEEK_END);
 	int file_size = ftell(file_path);
@@ -28,23 +29,19 @@ int main()
 
 	fread(c, 1, file_size, file_path);
 
-	int vertex_numbers  = 0;
-	int uv_numbers		= 0;
+	int uv_numbers = 0;
 	int normals_numbers = 0;
-	int faces_numbers	= 0;
 
-	mesh_t meshes[2];
-
-	int v_size = 9;
-	int uv_size = 6;
-	int normals_size = 9;
+	int v_size = 3;
+	int uv_size = 2;
+	int normals_size = 3;
 	int v_indecies_size = 3;
 	int vt_indecies_size = 3;
 	int vn_indecies_size = 3;
 
-	float *vertecies = (float*)malloc(sizeof(float) * v_size);
-	float *uvs		 = (float*)malloc(sizeof(float) * uv_size);
-	float *normals	 = (float*)malloc(sizeof(float) * normals_size);
+	float* vertecies = (float*)malloc(sizeof(float) * v_size);
+	float* uvs = (float*)malloc(sizeof(float) * uv_size);
+	float* normals = (float*)malloc(sizeof(float) * normals_size);
 
 	int* v_indecies = (int*)malloc(sizeof(int) * v_indecies_size);
 	int* vt_indecies = (int*)malloc(sizeof(int) * v_indecies_size);
@@ -52,10 +49,6 @@ int main()
 	int v_indecies_index = 0;
 	int vt_indecies_index = 0;
 	int vn_indecies_index = 0;
-
-	int realloc_v = 0;
-	int realloc_uv = 0;
-	int realloc_normal = 0;
 
 	static int index_v = 0;
 	static int index_uv = 0;
@@ -66,212 +59,165 @@ int main()
 	static int mesh_uv = 0;
 	static int mesh_normal = 0;
 
-	for (int i = 0 ; i < file_size; i++)
+	for (int i = 0; i < file_size; i++)
 	{
 		switch (c[i])
 		{
 			case '#': // comment
-				while (c[i - 1] != '\n' && i < sizeof(c))
-					i++;
+				while (c[i] != '\n' && i < file_size) i++;
 				break;
 			case 'v': // vertex
-				//if (i + 1 < sizeof(c))
+				switch (c[i + 1])
 				{
-					switch (c[i + 1])
-					{
-						case 't': // vertex uv
-							uv_numbers++;
-							if (realloc_uv)
+					case ' ': // vertex in itself
+						i += 2;
+						while (c[i] != '\n' && c[i] != '#' && i < file_size - 1)
+						{
+							float v1 = 0.0;
+							float vf = 0.0;
+							int nega = 1;
+							if (c[i] == '-') nega = -1, i++;
+							if (c[i] >= '0' && c[i] <= '9')
 							{
-								uv_size += 6;
-								uvs = (float*)realloc(uvs, sizeof(float) * uv_size);
-								realloc_uv = 0;
-							}
-							while (c[i + 1] != '\n' && c[i + 1] != '#' && i < sizeof(c))
-							{
-								float v1 = 0.0;
-								float vf = 0.0;
-								int nega = 1;
-								if (c[i] == '-') nega = -1, i++;
-								if (c[i] >= '0' && c[i] <= '9')
-								{
-									while (c[i] != '\n' && c[i] != '.' &&
-										c[i] != '#' && !isspace(c[i]) && i < sizeof(c))
-										v1 = v1 * 10 + (c[i] - 48), i++;
-									int mark = i;
-									while (c[i] != '\n' &&
-										c[i] != '#' &&
-										!isspace(c[i]) &&
-										i < sizeof(c))
-									{
-										if (c[i] >= '0' && c[i] <= '9')
-											vf += (c[i] - 48) / powf(10, i - mark);
-										i++;
-									}
-									//uvs[index_uv++] = (v1 + vf) * nega;
-									if (index_uv % 6 == 0)
-									{
-										realloc_uv = 1;
-										break;
-									}
-								}
+								while (c[i] != '\n' && c[i] != '.' &&
+									c[i] != '#' && !isspace(c[i]) && i < file_size)
+									v1 = v1 * 10 + (c[i] - 48), i++;
+								int mark = i;
 								i++;
-							}
-							break;
-						case 'n': // vertex normal
-							normals_numbers++;
-							if (realloc_normal)
-							{
-								normals_size += 9;
-								normals = (float*)realloc(normals, sizeof(float) * normals_size);
-								realloc_normal = 0;
-							}
-							while (c[i + 1] != '\n' && c[i + 1] != '#' && i < sizeof(c))
-							{
-								float v1 = 0.0;
-								float vf = 0.0;
-								int nega = 1;
-								if (c[i] == '-') nega = -1, i++;
-								if (c[i] >= '0' && c[i] <= '9')
+								while (c[i] != '\n' &&
+									c[i] != '#' &&
+									!isspace(c[i]) &&
+									i < file_size)
 								{
-									while (c[i] != '\n' && c[i] != '.' &&
-										c[i] != '#' && !isspace(c[i]) && i < sizeof(c))
-										v1 = v1 * 10 + (c[i] - 48), i++;
-									int mark = i;
-									while (c[i] != '\n' &&
-										c[i] != '#' &&
-										!isspace(c[i]) &&
-										i < sizeof(c))
-									{
-										if (c[i] >= '0' && c[i] <= '9')
-											vf += (c[i] - 48) / powf(10, i - mark);
-										i++;
-									}
-									//normals[index_normal++] = (v1 + vf) * nega;
-									if (index_normal % 9 == 0)
-									{
-										realloc_normal = 1;
-										break;
-									}
+									if (c[i] >= '0' && c[i] <= '9')
+										vf += (c[i] - 48) / powf(10, i - mark);
+									i++;
 								}
-								i++;
-							}
-							break;
-						case ' ': // vertex in itself
-							vertex_numbers++;
-							if (realloc_v)
-							{
-								v_size += 9;
-								vertecies = (float*)realloc(vertecies, sizeof(float) * v_size);
-								realloc_v = 0;
-							}
-							while (c[i + 1] != '\n' && c[i + 1] != '#' && i < sizeof(c))
-							{
-								float v1 = 0.0;
-								float vf = 0.0;
-								int nega = 1;
-								if (c[i] == '-') nega = -1, i++;
-								if (c[i] >= '0' && c[i] <= '9')
+								vertecies[index_v++] = (v1 + vf) * nega;
+								if (index_v > 0 && index_v % 3 == 0)
 								{
-									while (c[i] != '\n' && c[i] != '.' &&
-											c[i] != '#' && !isspace(c[i]) && i < sizeof(c))
-										v1 = v1 * 10 + (c[i] - 48), i++;
-									int mark = i;
-									while (c[i] != '\n' &&
-										c[i] != '#' &&
-										!isspace(c[i]) &&
-										i < sizeof(c))
-									{
-										if (c[i] >= '0' && c[i] <= '9')
-											vf += (c[i] - 48)/powf(10, i - mark);
-										i++;
-									}
-									//vertecies[index_v++] = (v1 + vf) * nega;
-									if (index_v % 9 == 0)
-									{
-										realloc_v = 1;
-										break;
-									}
+									v_size += 3;
+									vertecies = (float*)realloc(vertecies, sizeof(float) * v_size);
 								}
-								i++;
 							}
-							break;
-						default:
-							break;
-					}
+							if (c[i] == '\n') break;
+							i++;
+						}
+						break;
+					case 't':
+						i += 2;
+						while (c[i] != '\n')i++;
+						break;
+					case 'n':
+						i += 2;
+						while (c[i] != '\n')i++;
+						break;
+					default:
+						break;
 				}
 				break;
-			case 's':	// smooth shading on/off
-				break;
-			case 'f':	// mesh faces
-				faces_numbers++;
-				if (i + 1 < sizeof(c))
-				while (c[i + 1] != '\n' && c[i + 1] != '#')
-				{
-					int v = 0, vt = 0, vn = 0, slash_number = 0;
-					if (v_indecies_index % 3 == 0)
-						v_indecies = (int*)realloc(v_indecies, (v_indecies_index + 3) * sizeof(int));
-					if (vt_indecies_index % 3 == 0)
-						vt_indecies = (int*)realloc(vt_indecies, (vt_indecies_index + 3) * sizeof(int));
-					if (vn_indecies_index % 3 == 0)
-						vn_indecies = (int*)realloc(vn_indecies, (vn_indecies_index + 3) * sizeof(int));
 
-					if (c[i] >= '0' && c[i] <= '9')
+			case 's':	// smooth shading on/off
+				while (c[i] != '\n' && c[i + 1] != '#') i++;
+				break ;
+			case 'f':
+				{
+					i += 2;
+					int v1 = 0;
+					int slash = 0;
+					int last_space = 0;
+					while (c[i] != '\n' && c[i + 1] != '#' && i < file_size )
 					{
-						while (c[i] != '\n' && c[i] != '/' &&
-							c[i] != '#' && !isspace(c[i]) && i < sizeof(c))
+						last_space = 0;
+						if (c[i] >= '0' && c[i] <= '9')
+							v1 = v1 * 10 + (c[i] - 48);
+						if (isspace(c[i]) || c[i] == '/')
 						{
-							v = v * 10 + (c[i] - 48);
-							i++;
+							if (c[i] == '/' && slash % 2 == 0)
+								v_indecies[v_indecies_index++] = v1;
+							if (isspace(c[i]) && slash <= 0)
+								v_indecies[v_indecies_index++] = v1;
+							if (c[i] == '/') slash++;
+							v1 = 0;
+							last_space = 1;
 						}
-						if (c[i] == '/')
+						if (slash % 2 == 0 && v_indecies_index > 0 && v_indecies_index % 3 == 0)
 						{
-							i++;
-							while (c[i] != '\n' && c[i] != '/' &&
-								c[i] != '#' && !isspace(c[i]) && i < sizeof(c))
-							{
-								if (c[i] >= '0' && c[i] <= '9')
-									vt = vt * 10 + (c[i] - 48);
-								i++;
-							}
-							vt_indecies[vt_indecies_index++] = vt;
+							v_indecies_size += 3;
+							v_indecies = (int*)realloc(v_indecies, sizeof(int) * v_indecies_size);
 						}
-						if (c[i] == '/')
-						{
-							i++;
-							while (c[i] != '\n' && c[i] != '/' &&
-								c[i] != '#' && !isspace(c[i]) && i < sizeof(c))
-							{
-								if (c[i] >= '0' && c[i] <= '9')
-									vn = vn * 10 + (c[i] - 48);
-								i++;
-							}
-							vn_indecies[vn_indecies_index++] = vn;
-						}
-						v_indecies[v_indecies_index++] = v;
+						i++;
 					}
-					i++;
+					if (slash <= 0 && !last_space) 	v_indecies[v_indecies_index++] = v1;
+					break;
 				}
-				break;
 			default:
 				break;
 		}
 	}
 
-	//for (int i = 0 ; i < v_indecies_index; i++)
-	//	printf("vertex x: %f vertex y: %f vertex z: %f \n",  vertecies[v_indecies[i] * 3 + 0], 
-	//														 vertecies[v_indecies[i] * 3 + 1], vertecies[v_indecies[i] * 3 + 2]);
-	//for (int i = 0; i < vt_indecies_index; i++)
-	//	printf("uv x: %f uv y: %f \n", uvs[vt_indecies[i] * 2 + 0], uvs[vt_indecies[i] * 2 + 1]);
-	//for (int i = 0; i < vn_indecies_index; i++)
-	//	printf("normal x: %f normal y: %f normal z: %f\n",
-	//		normals[vn_indecies[i] * 3 + 0],
-	//		normals[vn_indecies[i] * 3 + 1],
-	//		normals[vn_indecies[i] * 3 + 2]);
+	mesh_t* meshes = (mesh_t*)malloc(sizeof(mesh_t) * v_indecies_index/3);
 
-	printf("vertecies numbers: %d\n", vertex_numbers);
-	printf("uvs numbers: %d\n", uv_numbers);
-	printf("normals numbers:%d\n", normals_numbers);
-	printf("faces numbers:%d\n", faces_numbers);
+	int ind = 0;
+
+	faces_numbers = v_indecies_index / 3;
+
+	//printf("%d\n", faces_numbers);
+
+	//for (int i = 0; i < v_indecies_index; i += 3)
+	//{
+	//	printf("%d %d %d\n", v_indecies[i], v_indecies[i + 1], v_indecies[i + 2]);
+	//}
+
+	//for (int i = 0; i < index_v; i += 3)
+	//{
+	//	printf("%f %f %f\n", vertecies[i], vertecies[i + 1], vertecies[i + 2]);
+	//}
+
+	int i = 0;
+	for (int vn = 0; vn < v_indecies_index; vn += 3)
+	{
+		printf("%d %d %d\n", v_indecies[vn + 0], v_indecies[vn + 1], v_indecies[vn + 2]);
+		//continue;
+		// v1
+		meshes[i].vertecies[0] = vertecies[(v_indecies[vn + 0] - 1) * 3 + 0];
+		meshes[i].vertecies[1] = vertecies[(v_indecies[vn + 0] - 1) * 3 + 1];
+		meshes[i].vertecies[2] = vertecies[(v_indecies[vn + 0] - 1) * 3 + 2];
+
+		//// v2
+		meshes[i].vertecies[3] = vertecies[(v_indecies[vn + 1] - 1) * 3 + 0];
+		meshes[i].vertecies[4] = vertecies[(v_indecies[vn + 1] - 1) * 3 + 1];
+		meshes[i].vertecies[5] = vertecies[(v_indecies[vn + 1] - 1) * 3 + 2];
+
+		//// v 3
+		meshes[i].vertecies[6] = vertecies[(v_indecies[vn + 2] - 1) * 3 + 0];
+		meshes[i].vertecies[7] = vertecies[(v_indecies[vn + 2] - 1) * 3 + 1];
+		meshes[i].vertecies[8] = vertecies[(v_indecies[vn + 2] - 1) * 3 + 2];
+
+		//printf("%d %d %d\n", v_indecies[vn + 0], v_indecies[vn + 1], v_indecies[vn + 2]);
+		i++;
+	}
+	//printf("meshes: %d\n", index_v);
+
+	for (int ii = 0; ii < i; ii++)
+	{
+	//	//continue;
+	//	// v1
+		printf("%f ",  meshes[ii].vertecies[0]);
+		printf("%f ",  meshes[ii].vertecies[1]);
+		printf("%f\n", meshes[ii].vertecies[2]);
+
+	//	//// v2
+		printf("%f ",  meshes[ii].vertecies[3]);
+		printf("%f ",  meshes[ii].vertecies[4]);
+		printf("%f\n", meshes[ii].vertecies[5]);
+
+	//	//// v 3
+		printf("%f ",  meshes[ii].vertecies[6]);
+		printf("%f ",  meshes[ii].vertecies[7]);
+		printf("%f\n", meshes[ii].vertecies[8]);
+	}
+
+	return meshes;
 }
 

@@ -1,6 +1,7 @@
 #include <SDL.h>
 #include <math.h>
 #include <stdio.h>
+#include "model_parser.c"
 
 typedef enum
 {
@@ -132,8 +133,8 @@ vector2_t convert_to_screen_space(vector4_t pos, int width, int height)
 {
     vector2_t screen_space;
 
-    screen_space.x = (pos.x/pos.z + 1) * width/2;
-    screen_space.y = (-pos.y/pos.z + 1) * height/2;
+    screen_space.x = (pos.x + 1) * width/2;
+    screen_space.y = (-pos.y + 1) * height/2;
 
     return screen_space;
 }
@@ -153,7 +154,10 @@ void drawLine(vector2_t point1, vector2_t point2, int* buffer, int width, int he
             startx = point2.x, endx = point1.x;
             starty = point2.y, endy = point1.y;
         }
-        float d = -(starty - endy) / -(startx - endx);
+        float d = 0;
+
+        if (-(startx - endx) != 0)
+            d = -(starty - endy) / -(startx - endx);
         float yy = starty;
         for (int x = startx; x < endx; x++)
         {
@@ -168,7 +172,10 @@ void drawLine(vector2_t point1, vector2_t point2, int* buffer, int width, int he
             startx = point2.x, endx = point1.x;
             starty = point2.y, endy = point1.y;
         }
-        float d = -(startx - endx) / -(starty - endy);
+        float d = 0;
+        if (-(startx - endx) != 0)
+            d = -(startx - endx) / -(starty - endy);
+
         float xx = startx;
         for (int y = starty; y < endy; y++)
         {
@@ -245,6 +252,7 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
     switch (triangle_mode)
     {
     case WIREFRAME:
+        printf("color line\n");
         drawLine(point1, point2, buffer, width, height, color[0]);
         drawLine(point2, point3, buffer, width, height, color[0]);
         drawLine(point3, point1, buffer, width, height, color[0]);
@@ -384,42 +392,6 @@ int main(int argc, char* argv[])
     int   pitch;
     float* zbuffer = (float*)malloc(width * height * sizeof(width * height));
 
-
-    float triangle[] =
-    {
-        // front
-        0.2f,  0.2f, 0.2f,  1.0f, 0.0f, 0.0f,   // top right
-        0.2f, -0.2f, 0.2f,  0.0f, 1.0f, 0.0f,   // bottom right
-       -0.2f, -0.2f, 0.2f,  0.0f, 0.0f, 1.0f, // bottom left
-       -0.2f,  0.2f, 0.2f,  1.0f, 0.0f, 0.0f,  // top left 
-
-       //back
-       0.2f,  0.2f, -0.2f, 1.0f, 0.8f, 0.4f,  // top right
-       0.2f, -0.2f, -0.2f, 0.0f, 1.0f, 0.0f, // bottom right
-      -0.2f, -0.2f, -0.2f, 0.0f, 0.0f, 1.0f,// bottom left
-      -0.2f,  0.2f, -0.2f, 1.0f, 0.0f, 1.0f// top left 
-    };
-
-    int indecies[] = {
-       0, 1, 3,
-       1, 2, 3,
-       // back
-       4, 5, 7,
-       5, 6, 7,
-       // right
-       0, 1, 4,
-       1, 4, 5,
-       // left
-       2, 3, 7,
-       2, 6, 7,
-       // top
-       0, 3, 4,
-       3, 4, 7,
-       // bottom
-       1, 2, 5,
-       2, 5, 6
-    };
-
     float angle = 0;
     float anglez = 0;
 
@@ -427,13 +399,11 @@ int main(int argc, char* argv[])
 
     SDL_LockTexture(surface, 0, &pixels, &pitch);
 
-
-
     matrix4_t view_matrix =
     {
         {1, 0, 0, 0},
         {0, 1, 0, 0},
-        {0, 0, -3, 0},
+        {0, 0, -23, 0},
         {0, 0, 0, 1}
     };
 
@@ -445,9 +415,9 @@ int main(int argc, char* argv[])
         {0, 0, 0, 1}
     };
 
-    vector4_t transform = {0.5, 0.5, 0.5, 1.0};
+    vector4_t transform = {0.0, 0.0, 1.0, 1.0};
 
-    matrix4_t transformx_matrix =
+    matrix4_t transform_matrix =
     {
         {1, 0, 0, transform.x},
         {0, 1, 0, transform.y},
@@ -458,6 +428,10 @@ int main(int argc, char* argv[])
     float fov = 90.0;
    
     float aspect_ratio = (float)width/(float)height;
+    
+    mesh_t* meshes = extract_meshes("utah.obj");
+
+    //return 0;
     while (1)
     {
         float n = 1.0, f = 100.0;
@@ -477,7 +451,6 @@ int main(int argc, char* argv[])
         if (-mouseY <= -250 || -mouseY <= 250)
             angle = -(mouseY);
         anglez = -mouseX;
-
 
         matrix4_t rotationx = {
             { 1,                       0,                        0, 0},
@@ -513,47 +486,50 @@ int main(int argc, char* argv[])
             // reset depth buffer
             for (int i = 0; i < height; i++)
                 for (int j = 0; j < width; j++)
-                    zbuffer[i * width + j] = -1000000;
+                    zbuffer[i * width + j] = -1000000; // depth buffer reinitialized to -100000
 
             // clear window
             for (int i = 0; i < height; i++)
                 for (int j = 0; j < width; j++)
                     draw_pixel(j, i, pixs, width, height, { 0, 0, 0, 255 });
 
-            for (int i = 0; i < sizeof(indecies) / sizeof(indecies[0]); i += 3)
+            for (int i = 0; i < faces_numbers; i++)
             {
-                int ind1x = indecies[i]     * stride, ind1y = indecies[i]     * stride + 1, ind1z = indecies[i]     * stride + 2;
-                int ind2x = indecies[i + 1] * stride, ind2y = indecies[i + 1] * stride + 1, ind2z = indecies[i + 1] * stride + 2;
-                int ind3x = indecies[i + 2] * stride, ind3y = indecies[i + 2] * stride + 1, ind3z = indecies[i + 2] * stride + 2;
+                //continue;
 
-                vector4_t vertex1 = multiply_matrix_vector(identity_matrix, { triangle[ind1x], triangle[ind1y], triangle[ind1z], 1 });
-                vector4_t vertex2 = multiply_matrix_vector(identity_matrix, { triangle[ind2x], triangle[ind2y], triangle[ind2z], 1 });
-                vector4_t vertex3 = multiply_matrix_vector(identity_matrix, { triangle[ind3x], triangle[ind3y], triangle[ind3z], 1 });
 
+                vector4_t vertex1 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[0]/10, meshes[i].vertecies[1] / 10, meshes[i].vertecies[2] / 10, 1 });
+                vector4_t vertex2 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[3] / 10, meshes[i].vertecies[4] / 10, meshes[i].vertecies[5] / 10, 1 });
+                vector4_t vertex3 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[6] / 10, meshes[i].vertecies[7] / 10, meshes[i].vertecies[8] / 10, 1 });
+
+                //vertex1 = multiply_matrix_vector(perspective_matrix, vertex1);
+                //vertex2 = multiply_matrix_vector(perspective_matrix, vertex2);
+                //vertex3 = multiply_matrix_vector(perspective_matrix, vertex3);
+
+                //vertex1 = multiply_matrix_vector(transform_matrix, vertex1);
+                //vertex2 = multiply_matrix_vector(transform_matrix, vertex2);
+                //vertex3 = multiply_matrix_vector(transform_matrix, vertex3);
 
                 vertex1 = multiply_matrix_vector(rotation, vertex1);
                 vertex2 = multiply_matrix_vector(rotation, vertex2);
                 vertex3 = multiply_matrix_vector(rotation, vertex3);
 
-                vertex1 = multiply_matrix_vector(view_matrix, vertex1);
-                vertex2 = multiply_matrix_vector(view_matrix, vertex2);
-                vertex3 = multiply_matrix_vector(view_matrix, vertex3);
+                //vertex1 = multiply_matrix_vector(view_matrix, vertex1);
+                //vertex2 = multiply_matrix_vector(view_matrix, vertex2);
+                //vertex3 = multiply_matrix_vector(view_matrix, vertex3);
 
-                vertex1 = multiply_matrix_vector(perspective_matrix, vertex1);
-                vertex2 = multiply_matrix_vector(perspective_matrix, vertex2);
-                vertex3 = multiply_matrix_vector(perspective_matrix, vertex3);
 
-                vertex1.x /= vertex1.w;
-                vertex1.y /= vertex1.w;
-                vertex1.z /= vertex1.w;
+                //vertex1.x /= vertex1.w;
+                //vertex1.y /= vertex1.w;
+                //vertex1.z /= vertex1.w;
 
-                vertex2.x /= vertex2.w;
-                vertex2.y /= vertex2.w;
-                vertex2.z /= vertex2.w;
+                //vertex2.x /= vertex2.w;
+                //vertex2.y /= vertex2.w;
+                //vertex2.z /= vertex2.w;
 
-                vertex3.x /= vertex3.w;
-                vertex3.y /= vertex3.w;
-                vertex3.z /= vertex3.w;
+                //vertex3.x /= vertex3.w;
+                //vertex3.y /= vertex3.w;
+                //vertex3.z /= vertex3.w;
 
                 vector2_t point1 = convert_to_screen_space(vertex1, width, height);
                 vector2_t point2 = convert_to_screen_space(vertex2, width, height);
@@ -561,13 +537,15 @@ int main(int argc, char* argv[])
 
                 color_t col[3] =
                 {
-                    {triangle[ind1x + 3] * 255, triangle[ind1y + 3] * 255, triangle[ind1z + 3] * 255, 255},
-                    {triangle[ind2x + 3] * 255, triangle[ind2y + 3] * 255, triangle[ind2z + 3] * 255, 255},
-                    {triangle[ind3x + 3] * 255, triangle[ind3y + 3] * 255, triangle[ind3z + 3] * 255, 255 }
+                    {255, 0, 0, 255},
+                    {0, 255, 0, 255},
+                    {0, 0, 255, 255}
                 };
 
-                drawTriangle(point1, point2, point3, pixs, width, height, col, 
-                            FILLED, zbuffer, vertex1.z, vertex2.z, vertex3.z);
+                draw_pixel(point1.x, point1.y, pixs, width, height, col[0]);
+                draw_pixel(point2.x, point2.y, pixs, width, height, col[0]);
+                draw_pixel(point3.x, point3.y, pixs, width, height, col[0]);
+                drawTriangle(point1, point2, point3, pixs, width, height, col, WIREFRAME, zbuffer, vertex1.z, vertex2.z, vertex3.z);
             }
         }
         SDL_UnlockTexture(surface);
