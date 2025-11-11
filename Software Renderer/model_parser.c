@@ -177,7 +177,6 @@ mesh_t *extract_meshes(const char* model_path)
 	int i = 0;
 	for (int vn = 0; vn < v_indecies_index; vn += 3)
 	{
-		printf("%d %d %d\n", v_indecies[vn + 0], v_indecies[vn + 1], v_indecies[vn + 2]);
 		//continue;
 		// v1
 		meshes[i].vertecies[0] = vertecies[(v_indecies[vn + 0] - 1) * 3 + 0];
@@ -198,25 +197,6 @@ mesh_t *extract_meshes(const char* model_path)
 		i++;
 	}
 	//printf("meshes: %d\n", index_v);
-
-	for (int ii = 0; ii < i; ii++)
-	{
-	//	//continue;
-	//	// v1
-		printf("%f ",  meshes[ii].vertecies[0]);
-		printf("%f ",  meshes[ii].vertecies[1]);
-		printf("%f\n", meshes[ii].vertecies[2]);
-
-	//	//// v2
-		printf("%f ",  meshes[ii].vertecies[3]);
-		printf("%f ",  meshes[ii].vertecies[4]);
-		printf("%f\n", meshes[ii].vertecies[5]);
-
-	//	//// v 3
-		printf("%f ",  meshes[ii].vertecies[6]);
-		printf("%f ",  meshes[ii].vertecies[7]);
-		printf("%f\n", meshes[ii].vertecies[8]);
-	}
 
 	return meshes;
 }

@@ -133,7 +133,7 @@ vector2_t convert_to_screen_space(vector4_t pos, int width, int height)
 {
     vector2_t screen_space;
 
-    screen_space.x = (pos.x + 1) * width/2;
+    screen_space.x = (pos.x + 1) * width / 2;
     screen_space.y = (-pos.y + 1) * height/2;
 
     return screen_space;
@@ -252,7 +252,6 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
     switch (triangle_mode)
     {
     case WIREFRAME:
-        printf("color line\n");
         drawLine(point1, point2, buffer, width, height, color[0]);
         drawLine(point2, point3, buffer, width, height, color[0]);
         drawLine(point3, point1, buffer, width, height, color[0]);
@@ -518,7 +517,6 @@ int main(int argc, char* argv[])
                 //vertex2 = multiply_matrix_vector(view_matrix, vertex2);
                 //vertex3 = multiply_matrix_vector(view_matrix, vertex3);
 
-
                 //vertex1.x /= vertex1.w;
                 //vertex1.y /= vertex1.w;
                 //vertex1.z /= vertex1.w;
@@ -542,10 +540,7 @@ int main(int argc, char* argv[])
                     {0, 0, 255, 255}
                 };
 
-                draw_pixel(point1.x, point1.y, pixs, width, height, col[0]);
-                draw_pixel(point2.x, point2.y, pixs, width, height, col[0]);
-                draw_pixel(point3.x, point3.y, pixs, width, height, col[0]);
-                drawTriangle(point1, point2, point3, pixs, width, height, col, WIREFRAME, zbuffer, vertex1.z, vertex2.z, vertex3.z);
+                drawTriangle(point1, point2, point3, pixs, width, height, col, FILLED, zbuffer, vertex1.z, vertex2.z, vertex3.z);
             }
         }
         SDL_UnlockTexture(surface);
