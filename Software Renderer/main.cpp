@@ -161,8 +161,8 @@ vector2_t convert_to_screen_space(vector4_t pos, int width, int height)
 
     if (z == 0) z = 1;
 
-    screen_space.x =  (pos.x/z + 1) * width/2;
-    screen_space.y = (-pos.y/z + 1) * height/2;
+    screen_space.x =  (pos.x + 1) * width/2;
+    screen_space.y = (-pos.y + 1) * height/2;
 
     return screen_space;
 }
@@ -484,10 +484,12 @@ int main(int argc, char* argv[])
     
     mesh_t* meshes = extract_meshes("girl.obj");
 
+    if (!meshes) { return 1; }
+
     //return 0;
     while (1)
     {
-        float n = 1.0, f = 100.0;
+        float n = 0.01, f = 1000.0;
         float t = tan(rad_to_deg(fov/2)) * n, r = t * aspect_ratio;
 
         matrix4_t perspective_matrix =
@@ -502,8 +504,8 @@ int main(int argc, char* argv[])
         SDL_GetMouseState(&mouseX, &mouseY);
 
         //if (-mouseY <= -250 || -mouseY <= 250)
-        angle = 180;
-        anglez++;
+        angle = 180 + mouseY;
+        anglez = mouseX;
 
         matrix4_t rotationx = {
             { 1,                       0,                        0, 0},
@@ -552,12 +554,9 @@ int main(int argc, char* argv[])
                 vector4_t vertex2 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[3], meshes[i].vertecies[4], meshes[i].vertecies[5], 1 });
                 vector4_t vertex3 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[6], meshes[i].vertecies[7], meshes[i].vertecies[8], 1 });
 
-                vertex1.x /= 10; vertex1.y /= 10; vertex1.z /= 10;
-                vertex2.x /= 10; vertex2.y /= 10; vertex2.z /= 10;
-                vertex3.x /= 10; vertex3.y /= 10; vertex3.z /= 10;
-                //vertex1 = multiply_matrix_vector(perspective_matrix, vertex1);
-                //vertex2 = multiply_matrix_vector(perspective_matrix, vertex2);
-                //vertex3 = multiply_matrix_vector(perspective_matrix, vertex3);
+                vertex1.x /= 2; vertex1.y /= 2; vertex1.z /= 2;
+                vertex2.x /= 2; vertex2.y /= 2; vertex2.z /= 2;
+                vertex3.x /= 2; vertex3.y /= 2; vertex3.z /= 2;
 
                 vertex1 = multiply_matrix_vector(rotation, vertex1);
                 vertex2 = multiply_matrix_vector(rotation, vertex2);
@@ -567,6 +566,9 @@ int main(int argc, char* argv[])
                 vertex2 = multiply_matrix_vector(transform_matrix, vertex2);
                 vertex3 = multiply_matrix_vector(transform_matrix, vertex3);
 
+                vertex1 = multiply_matrix_vector(perspective_matrix, vertex1);
+                vertex2 = multiply_matrix_vector(perspective_matrix, vertex2);
+                vertex3 = multiply_matrix_vector(perspective_matrix, vertex3);
 
                 // calculate normals here for face culling
                 vector4_t normal = normalize_vector(cross_product_4d(sub_vector4(vertex1, vertex3), sub_vector4(vertex1, vertex2)));
@@ -576,21 +578,23 @@ int main(int argc, char* argv[])
                 if (scalar_n > 0.0)  // 
                     continue;
 
-                //vertex1 = multiply_matrix_vector(view_matrix, vertex1);
-                //vertex2 = multiply_matrix_vector(view_matrix, vertex2);
-                //vertex3 = multiply_matrix_vector(view_matrix, vertex3);
+                vertex1 = multiply_matrix_vector(view_matrix, vertex1);
+                vertex2 = multiply_matrix_vector(view_matrix, vertex2);
+                vertex3 = multiply_matrix_vector(view_matrix, vertex3);
 
-                //vertex1.x /= vertex1.w;
-                //vertex1.y /= vertex1.w;
-                //vertex1.z /= vertex1.w;
+                vertex1.x /= vertex1.w;
+                vertex1.y /= vertex1.w;
+                vertex1.z /= vertex1.w;
 
-                //vertex2.x /= vertex2.w;
-                //vertex2.y /= vertex2.w;
-                //vertex2.z /= vertex2.w;
+                vertex2.x /= vertex2.w;
+                vertex2.y /= vertex2.w;
+                vertex2.z /= vertex2.w;
 
-                //vertex3.x /= vertex3.w;
-                //vertex3.y /= vertex3.w;
-                //vertex3.z /= vertex3.w;
+                vertex3.x /= vertex3.w;
+                vertex3.y /= vertex3.w;
+                vertex3.z /= vertex3.w;
+
+                if (vertex3.z > 1 || vertex2.z > 1 || vertex1.z > 1) continue;
 
                 vector2_t point1 = convert_to_screen_space(vertex1, width, height);
                 vector2_t point2 = convert_to_screen_space(vertex2, width, height);
