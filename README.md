@@ -5,9 +5,9 @@
 
 
 ### Neutral color preview
- Cube                                                                                |                                       utah teapot
-:-----------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------:
- |<img width="400" height="400" alt="cube" src="https://github.com/user-attachments/assets/6e36a60a-1bf1-433d-9198-b9dabc20b2d7" /> | <img width="400" height="400" alt="Screenshot from 2025-11-12 22-41-41" src="https://github.com/user-attachments/assets/a788f242-fc90-4a3e-b6d2-96b2da31f104" />
+|                                     utah teapot
+|:-------------------------------------------------------------------------------------:
+ |<img width="400" height="400" alt="Screenshot from 2025-11-12 22-41-41" src="https://github.com/user-attachments/assets/a788f242-fc90-4a3e-b6d2-96b2da31f104" />
 |
  
   Suzan head   (the infamous CGI monkey)                                                                             |                                       Girl
@@ -16,4 +16,4 @@
 
   Jack Daniel's Bottle                                            |
 :-----------------------------------------------------------------------------------:|
-|<img width="400" height="600" alt="jack" src="https://github.com/user-attachments/assets/7a7cb621-e022-4e89-ad89-7c3b80341461" />|
+|<img width="400" height="400" alt="jack" src="https://github.com/user-attachments/assets/7a7cb621-e022-4e89-ad89-7c3b80341461" />|
