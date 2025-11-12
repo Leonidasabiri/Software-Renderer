@@ -277,6 +277,8 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
     float d2 = dx2 / dy2;
     float full_surface = triangle_surface(point1, point3, point2);
 
+    float minb = 0.000001;
+
     switch (triangle_mode)
     {
     case WIREFRAME:
@@ -287,12 +289,17 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
     case FILLED:
         for (float y = points[0].y; y <= points[1].y; y++)
         {
-            for (int x = startx; x < endx; x++)
+            for (int x = startx; x <= endx; x++)
             {
                 vector2_t point = { x, y };
                 float surface1 = triangle_surface(point, point3, point2) / full_surface;
                 float surface2 = triangle_surface(point, point2, point1) / full_surface;
                 float surface3 = triangle_surface(point, point1, point3) / full_surface;
+
+                //if (surface1 < minb) surface1 = minb;
+                //if (surface2 < minb) surface2 = minb;
+                //if (surface3 < minb) surface3 = minb;
+
 
                 color_t final_color = {
                     (int)(surface1 * color[0].r + surface2 * color[1].r + surface3 * color[2].r),
@@ -310,12 +317,16 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
                     draw_pixel(x, y, buffer, width, height, final_color);
                 }
             }
-            for (int x = endx; x < startx; x++)
+            for (int x = endx; x <= startx; x++)
             {
                 vector2_t point = { x, y };
                 float surface1 = triangle_surface(point, point3, point2) / full_surface;
                 float surface2 = triangle_surface(point, point2, point1) / full_surface;
                 float surface3 = triangle_surface(point, point1, point3) / full_surface;
+
+                //if (surface1 < minb) surface1 = minb;
+                //if (surface2 < minb) surface2 = minb;
+                //if (surface3 < minb) surface3 = minb;
 
                 color_t final_color = {
                     (int)(surface1 * color[0].r + surface2 * color[1].r + surface3 * color[2].r),
@@ -344,14 +355,18 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
         d1 = dx1 / dy1;
         d2 = dx2 / dy2;
 
-        for (float y = points[1].y; y < points[2].y; y++)
+        for (float y = points[1].y; y <= points[2].y; y++)
         {
             for (int x = startx; x <= endx; x++)
             {
                 vector2_t point = { x, y };
-                float surface1 = triangle_surface(point, point3, point2) / full_surface;
-                float surface2 = triangle_surface(point, point2, point1) / full_surface;
-                float surface3 = triangle_surface(point, point1, point3) / full_surface;
+                float surface1 = (triangle_surface(point, point3, point2) / full_surface);
+                float surface2 = (triangle_surface(point, point2, point1) / full_surface);
+                float surface3 = (triangle_surface(point, point1, point3) / full_surface);
+
+                //if (surface1 < minb) surface1 = minb;
+                //if (surface2 < minb) surface2 = minb;
+                //if (surface3 < minb) surface3 = minb;
 
                 color_t final_color = {
                     (int)(surface1 * color[0].r + surface2 * color[1].r + surface3 * color[2].r) ,
@@ -375,6 +390,10 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
                 float surface1 = triangle_surface(point, point3, point2) / full_surface;
                 float surface2 = triangle_surface(point, point2, point1) / full_surface;
                 float surface3 = triangle_surface(point, point1, point3) / full_surface;
+
+                //if (surface1 < minb) surface1 = minb;
+                //if (surface2 < minb) surface2 = minb;
+                //if (surface3 < minb) surface3 = minb;
 
                 color_t final_color = {
                     (surface1 * color[0].r + surface2 * color[1].r + surface3 * color[2].r),
@@ -449,7 +468,7 @@ int main(int argc, char* argv[])
         {0, 0, 0, 1}
     };
 
-    vector4_t transform = {0.0, 0.12, -0.7, 1.0};
+    vector4_t transform = {0.0, -0.1, -0.7, 1.0};
 
     matrix4_t transform_matrix =
     {
@@ -463,7 +482,7 @@ int main(int argc, char* argv[])
    
     float aspect_ratio = (float)width/(float)height;
     
-    mesh_t* meshes = extract_meshes("cube.obj");
+    mesh_t* meshes = extract_meshes("girl.obj");
 
     //return 0;
     while (1)
@@ -483,8 +502,8 @@ int main(int argc, char* argv[])
         SDL_GetMouseState(&mouseX, &mouseY);
 
         //if (-mouseY <= -250 || -mouseY <= 250)
-        angle = mouseY;
-        anglez = mouseX;
+        angle = 180;
+        anglez++;
 
         matrix4_t rotationx = {
             { 1,                       0,                        0, 0},
@@ -529,10 +548,13 @@ int main(int argc, char* argv[])
 
             for (int i = 0; i < faces_numbers; i++)
             {
-                vector4_t vertex1 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[0]/7, meshes[i].vertecies[1]/7, meshes[i].vertecies[2]/7, 1 });
-                vector4_t vertex2 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[3]/7, meshes[i].vertecies[4]/7, meshes[i].vertecies[5]/7, 1 });
-                vector4_t vertex3 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[6]/7, meshes[i].vertecies[7]/7, meshes[i].vertecies[8]/7, 1 });
+                vector4_t vertex1 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[0], meshes[i].vertecies[1], meshes[i].vertecies[2], 1 });
+                vector4_t vertex2 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[3], meshes[i].vertecies[4], meshes[i].vertecies[5], 1 });
+                vector4_t vertex3 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[6], meshes[i].vertecies[7], meshes[i].vertecies[8], 1 });
 
+                vertex1.x /= 10; vertex1.y /= 10; vertex1.z /= 10;
+                vertex2.x /= 10; vertex2.y /= 10; vertex2.z /= 10;
+                vertex3.x /= 10; vertex3.y /= 10; vertex3.z /= 10;
                 //vertex1 = multiply_matrix_vector(perspective_matrix, vertex1);
                 //vertex2 = multiply_matrix_vector(perspective_matrix, vertex2);
                 //vertex3 = multiply_matrix_vector(perspective_matrix, vertex3);
@@ -549,7 +571,9 @@ int main(int argc, char* argv[])
                 // calculate normals here for face culling
                 vector4_t normal = normalize_vector(cross_product_4d(sub_vector4(vertex1, vertex3), sub_vector4(vertex1, vertex2)));
 
-                if (dot_product(normal, {0.0, 0.0, -1.0, 1.0}) > 0.0)  // 
+                float scalar_n = dot_product(normal, { 0.0, 0.0, -1.0, 1.0 });
+
+                if (scalar_n > 0.0)  // 
                     continue;
 
                 //vertex1 = multiply_matrix_vector(view_matrix, vertex1);
@@ -575,9 +599,9 @@ int main(int argc, char* argv[])
 
                 color_t col[3] =
                 {
-                    { 255, 0, 0, 255  },
-                    { 0  , 255, 0, 255  },
-                    { 0  , 0, 255, 255  }
+                    { -scalar_n * 255, -scalar_n * 255, -scalar_n * 255, 1 },
+                    { -scalar_n * 255, -scalar_n * 255, -scalar_n * 255, 1 },
+                    { -scalar_n * 255, -scalar_n * 255, -scalar_n * 255, 1 }
                 };
 
                 drawTriangle(point1, point2, point3, pixs, width, height, col, FILLED, zbuffer, vertex1.z, vertex2.z, vertex3.z);
