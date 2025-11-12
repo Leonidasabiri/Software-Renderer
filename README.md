@@ -5,11 +5,12 @@
 
  Cube                                                                                |                                       utah teapot
 :-----------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------:
- |<img width="400" height="400" alt="cube" src="https://github.com/user-attachments/assets/6e36a60a-1bf1-433d-9198-b9dabc20b2d7" /> | <img width="400" height="400" alt="utah" src="https://github.com/user-attachments/assets/9ce6780a-981a-489a-98a6-d9dc671b1564" />|
+ |<img width="400" height="400" alt="cube" src="https://github.com/user-attachments/assets/6e36a60a-1bf1-433d-9198-b9dabc20b2d7" /> | <img width="400" height="400" alt="Screenshot from 2025-11-12 22-41-41" src="https://github.com/user-attachments/assets/a788f242-fc90-4a3e-b6d2-96b2da31f104" />
+|
  
   Suzan head   (the infamous CGI monkey)                                                                             |                                       Girl
 :-----------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------:
- | <img width="400" height="400" alt="suzan" src="https://github.com/user-attachments/assets/313d85b6-3c13-45b9-b4eb-72e5e4afd6d5" />| <img width="400" height="400" alt="girl" src="https://github.com/user-attachments/assets/1c0914d7-4c00-44a6-a3a7-dbee06098ae3" />|
+ | <img width="400" height="400" alt="Screenshot from 2025-11-12 22-45-06" src="https://github.com/user-attachments/assets/82124547-29ea-468a-9203-93ab58eea96e" /> | <img width="400" height="400" alt="girl" src="https://github.com/user-attachments/assets/1c0914d7-4c00-44a6-a3a7-dbee06098ae3" />|
 
   Jack Daniel's Bottle                                            |
 :-----------------------------------------------------------------------------------:|
