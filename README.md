@@ -3,6 +3,8 @@
  This is a simple software renderer written in C using SDL just for window management and writting pixels to the framebuffer.
 
 
+
+### Neutral color preview
  Cube                                                                                |                                       utah teapot
 :-----------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------:
  |<img width="400" height="400" alt="cube" src="https://github.com/user-attachments/assets/6e36a60a-1bf1-433d-9198-b9dabc20b2d7" /> | <img width="400" height="400" alt="Screenshot from 2025-11-12 22-41-41" src="https://github.com/user-attachments/assets/a788f242-fc90-4a3e-b6d2-96b2da31f104" />
