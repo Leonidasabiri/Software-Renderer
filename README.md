@@ -2,7 +2,7 @@
 
  This is a simple software renderer written in C using SDL just for window management and writting pixels to the framebuffer.
 
-
+Still a work in progress.
 
 ### Neutral color preview
 |                                     utah teapot
