@@ -6,6 +6,13 @@
 #include "stb_image.h"
 //#include "math.cpp"
 
+typedef struct
+{
+    unsigned char* texture;
+    int            width;
+    int            height;
+}texture_t;
+
 typedef enum
 {
     WIREFRAME,
@@ -220,7 +227,7 @@ void drawLine(vector2_t point1, vector2_t point2, int* buffer, int width, int he
 color_t fetch_pixel(unsigned char *surface, int x, int y, int width, int height)
 {
 
-    if (x < 0 || y < 0 || y > 2047 || x > 2047) return { 0,0,0,255 };
+    if (x < 0 || y < 0 || y > height - 1 || x > width - 1) return { 0,0,0,255 };
 
     char r = surface[(x + y * width) * 4 + 0];
     char g = surface[(x + y * width) * 4 + 1];
@@ -238,7 +245,7 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
     int* buffer, int width, int height, color_t color[3],
     triangle_draw_mode_t triangle_mode, float* zbuffer, 
     float z1, float z2, float z3, 
-    float uvs[6], unsigned char *texture)
+    float uvs[6], texture_t model_texture)
 {
     vector2_t points[3];
 
@@ -328,11 +335,10 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
 
                 float z_interpolate = 1.0 / (surface1 * 1.0 / z1 + surface3 * 1.0 / z2 + surface2 * 1.0 / z3) * 15;
 
-                int uvx_interpolate = (int)(surface1 * 2048 * uvs[0] + surface2 * 2048 * uvs[4] + surface3 * 2048 * uvs[2]);
-                int uvy_interpolate = (int)(surface1 * 2048 * uvs[1] + surface2 * 2048 * uvs[5] + surface3 * 2048 * uvs[3]);
+                int uvx_interpolate = (int)(surface1 * model_texture.width * uvs[0] + surface2 * model_texture.width + surface3 * model_texture.width * uvs[2]);
+                int uvy_interpolate = (int)(surface1 * model_texture.width * uvs[1] + surface2 * model_texture.width + surface3 * model_texture.width * uvs[3]);
 
-                color_t final_colort = fetch_pixel(texture, uvx_interpolate, uvy_interpolate, 2048, 2048);
-
+                color_t final_colort = fetch_pixel(model_texture.texture, uvx_interpolate, uvy_interpolate, model_texture.width, model_texture.height);
 
                 int index = (int)((int)(y)*width + (x));
 
@@ -373,10 +379,10 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
 
                 int index = (int)((int)(y)*width + (x));
 
-                int uvx_interpolate = (int)(surface1 * 2048 * uvs[0] + surface2 * 2048 * uvs[4] + surface3 * 2048 * uvs[2]);
-                int uvy_interpolate = (int)(surface1 * 2048 * uvs[1] + surface2 * 2048 * uvs[5] + surface3 * 2048 * uvs[3]);
+                int uvx_interpolate = (int)(surface1 * model_texture.width * uvs[0] + surface2 * model_texture.width * uvs[4] + surface3 * model_texture.width * uvs[2]);
+                int uvy_interpolate = (int)(surface1 * model_texture.width * uvs[1] + surface2 * model_texture.width * uvs[5] + surface3 * model_texture.width * uvs[3]);
 
-                color_t final_colort = fetch_pixel(texture, uvx_interpolate, uvy_interpolate, 2048, 2048);
+                color_t final_colort = fetch_pixel(model_texture.texture, uvx_interpolate, uvy_interpolate, model_texture.width, model_texture.height);
 
 
                 if (index >= 0 && index < width * height && z_interpolate >= zbuffer[index])
@@ -432,7 +438,7 @@ int main(int argc, char* argv[])
         {0, 0, 0, 1}
     };
 
-    vector4_t transform = {0.0, -0.1, -2.9, 1.0};
+    vector4_t transform = {0.0, -0.1, -4.9, 1.0};
 
     matrix4_t transform_matrix =
     {
@@ -451,11 +457,13 @@ int main(int argc, char* argv[])
     
     // model texture here
     int w, h, channels;
-    unsigned char* texture = stbi_load("models/PikaGirl_C.png", &w, &h, &channels, 4);
+    unsigned char* texture = stbi_load("models/Jack_Daniels_Texture.png", &w, &h, &channels, 4);
+
+    texture_t model_texture = {texture, w, h};
 
     if (!texture) printf("bad texture\n");
 
-    mesh_t* meshes = extract_meshes("models/suzan.obj");
+    mesh_t* meshes = extract_meshes("models/girl.obj");
     if (!meshes) { return 1; }
     
     while (1)
@@ -568,7 +576,7 @@ int main(int argc, char* argv[])
                     vertex3.z /= vertex3.w;
                 }
 
-                if (vertex3.z >= 0.9 || vertex2.z >= 0.9 || vertex1.z >= 0.9) continue;
+                if (vertex3.w <= 1 || vertex2.w <= 1 || vertex1.w <= 1) continue;
 
                 vector2_t point1 = convert_to_screen_space(vertex1, width, height);
                 vector2_t point2 = convert_to_screen_space(vertex2, width, height);
@@ -581,7 +589,7 @@ int main(int argc, char* argv[])
                     { -scalar_n * 255, -scalar_n * 255, -scalar_n * 255, 1 }
                 };
 
-                drawTriangle(point1, point2, point3, pixs, width, height, col, FILLED, zbuffer, vertex1.z, vertex2.z, vertex3.z, meshes[i].uvs, texture);
+                drawTriangle(point1, point2, point3, pixs, width, height, col, FILLED, zbuffer, vertex1.z, vertex2.z, vertex3.z, meshes[i].uvs, model_texture);
             }
         }
 
