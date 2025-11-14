@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <stdlib.h>
+#include <assert.h>
 
 typedef struct
 {
@@ -19,6 +20,11 @@ mesh_t *extract_meshes(const char* model_path)
 	FILE* file_path;
 	
 	fopen_s(&file_path, model_path, "rb");
+
+	if (!file_path)
+	{
+		return 0;
+	}
 
 	fseek(file_path, 0, SEEK_END);
 	int file_size = ftell(file_path);
@@ -104,7 +110,38 @@ mesh_t *extract_meshes(const char* model_path)
 						break;
 					case 't':
 						i += 2;
-						while (c[i] != '\n')i++;
+						while (c[i] != '\n' && c[i] != '#' && i < file_size - 1)
+						{
+							float v1 = 0.0;
+							float vf = 0.0;
+							int nega = 1;
+							if (c[i] == '-') nega = -1, i++;
+							if (c[i] >= '0' && c[i] <= '9')
+							{
+								while (c[i] != '\n' && c[i] != '.' &&
+									c[i] != '#' && !isspace(c[i]) && i < file_size)
+									v1 = v1 * 10 + (c[i] - 48), i++;
+								int mark = i;
+								i++;
+								while (c[i] != '\n' &&
+									c[i] != '#' &&
+									!isspace(c[i]) &&
+									i < file_size)
+								{
+									if (c[i] >= '0' && c[i] <= '9')
+										vf += (c[i] - 48) / powf(10, i - mark);
+									i++;
+								}
+								uvs[index_uv++] = (v1 + vf) * nega;
+								if (index_uv > 0 && index_uv % 2 == 0)
+								{
+									uv_size += 2;
+									uvs = (float*)realloc(uvs, sizeof(float) * uv_size);
+								}
+							}
+							if (c[i] == '\n') break;
+							i++;
+						}
 						break;
 					case 'n':
 						i += 2;
@@ -116,7 +153,11 @@ mesh_t *extract_meshes(const char* model_path)
 				break;
 
 			case 's':	// smooth shading on/off
-				while (c[i] != '\n' && c[i + 1] != '#') i++;
+				while (c[i] != '\n' && c[i + 1] != '#' && i < file_size)
+				{
+
+					i++;
+				}
 				break ;
 			case 'f':
 				{
@@ -131,22 +172,40 @@ mesh_t *extract_meshes(const char* model_path)
 							v1 = v1 * 10 + (c[i] - 48);
 						if (isspace(c[i]) || c[i] == '/')
 						{
-							if (c[i] == '/' && slash % 2 == 0)
-								v_indecies[v_indecies_index++] = v1;
-							if (isspace(c[i]) && slash <= 0)
-								v_indecies[v_indecies_index++] = v1;
+							if (c[i] == '/')
+							{
+								if (slash % 2 == 0)
+									v_indecies[v_indecies_index++] = v1;
+								if (slash % 2 != 0)
+									vt_indecies[vt_indecies_index++] = v1;
+							}
+							if (isspace(c[i]))
+							{
+								if (slash <= 0)
+									v_indecies[v_indecies_index++] = v1;
+								if (slash%2 != 0)	
+									vt_indecies[vt_indecies_index++] = v1;
+							}
 							if (c[i] == '/') slash++;
 							v1 = 0;
 							last_space = 1;
 						}
-						if (slash % 2 == 0 && v_indecies_index > 0 && v_indecies_index % 3 == 0)
+						if (v_indecies_index > 0 && v_indecies_index % 3 == 0)
 						{
 							v_indecies_size += 3;
 							v_indecies = (int*)realloc(v_indecies, sizeof(int) * v_indecies_size);
 						}
+						if (slash % 2 != 0 && vt_indecies_index > 0 && vt_indecies_index % 3 == 0)
+						{
+							vt_indecies_size += 3;
+							vt_indecies = (int*)realloc(vt_indecies, sizeof(int) * vt_indecies_size);
+						}
+
 						i++;
 					}
 					if (slash <= 0 && !last_space) 	v_indecies[v_indecies_index++] = v1;
+					if (slash%2 != 0 && !last_space) 	vt_indecies[vt_indecies_index++] = v1;/*
+					//if (slash >= 3 && !last_space) 	vn_indecies[vn_indecies_index++] = v1;*/
 					break;
 				}
 			default:
@@ -177,6 +236,23 @@ mesh_t *extract_meshes(const char* model_path)
 		meshes[i].vertecies[6] = vertecies[(v_indecies[vn + 2] - 1) * 3 + 0];
 		meshes[i].vertecies[7] = vertecies[(v_indecies[vn + 2] - 1) * 3 + 1];
 		meshes[i].vertecies[8] = vertecies[(v_indecies[vn + 2] - 1) * 3 + 2];
+
+		i++;
+	}
+	i = 0;
+	for (int vn = 0; vn < vt_indecies_index; vn += 3)
+	{
+		// v1
+		meshes[i].uvs[0] = uvs[(vt_indecies[vn + 0] - 1) * 2 + 0];
+		meshes[i].uvs[1] = uvs[(vt_indecies[vn + 0] - 1) * 2 + 1];
+		
+		// v2
+		meshes[i].uvs[2] = uvs[(vt_indecies[vn + 1] - 1) * 2 + 0];
+		meshes[i].uvs[3] = uvs[(vt_indecies[vn + 1] - 1) * 2 + 1];
+
+		// v3
+		meshes[i].uvs[4] = uvs[(vt_indecies[vn + 2] - 1) * 2 + 0];
+		meshes[i].uvs[5] = uvs[(vt_indecies[vn + 2] - 1) * 2 + 1];
 
 		i++;
 	}
