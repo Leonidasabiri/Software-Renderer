@@ -1,7 +1,10 @@
+#define STB_IMAGE_IMPLEMENTATION
 #include <SDL.h>
 #include <math.h>
 #include <stdio.h>
 #include "model_parser.c"
+#include "stb_image.h"
+//#include "math.cpp"
 
 typedef enum
 {
@@ -28,14 +31,6 @@ typedef struct
 {
     vector4_t x, y, z, w;
 } matrix4_t;
-
-typedef struct
-{
-    int width;
-    int height;
-    int pixels_buffer;
-    float zbuffer;
-} renderer_t;
 
 matrix4_t multiply_matrix_matrix(matrix4_t matrix4_1, matrix4_t matrix4_2)
 {
@@ -124,14 +119,6 @@ matrix4_t matrix4x4_transpose(matrix4_t matrix4_1)
     };
 }
 
-void draw_pixel(int x, int y, int* buffer, int width, int height, color_t color)
-{
-    if (x < 0 || y < 0 || x > width || y > height)
-        return;
-    int pos = (x + y * width);
-    buffer[pos] = (int)color.r << 24 | (int)color.g << 16 | (int)color.b << 8 | (int)color.a;
-}
-
 float cross_product_2d(vector2_t vector1, vector2_t vector2)
 {
     return vector1.x * vector2.y - vector1.y * vector2.x;
@@ -148,18 +135,35 @@ vector4_t cross_product_4d(vector4_t vector1, vector4_t vector2)
     };
 }
 
+float rad_to_deg(float angle)
+{
+    return 3.14 / 180 * angle;
+}
+
+vector4_t normalize_vector(vector4_t vector)
+{
+    float length = sqrt(dot_product(vector, vector));
+
+    return { vector.x / length,vector.y / length, vector.z / length, 1 };
+}
+
 float triangle_surface(vector2_t pos1, vector2_t pos2, vector2_t pos3)
 {
     return cross_product_2d(sub_vector(pos1, pos2), sub_vector(pos3, pos2)) * 1 / 2;
 }
 
+void draw_pixel(int x, int y, int* buffer, int width, int height, color_t color)
+{
+    if (x < 0 || y < 0 || x > width || y > height)
+        return;
+    int pos = (x + y * width);
+    buffer[pos] = (int)color.r << 24 | (int)color.g << 16 | (int)color.b << 8 | (int)color.a;
+}
+
+
 vector2_t convert_to_screen_space(vector4_t pos, int width, int height)
 {
     vector2_t screen_space;
-
-    float z = pos.z;
-
-    if (z == 0) z = 1;
 
     screen_space.x =  (pos.x + 1) * width/2;
     screen_space.y = (-pos.y + 1) * height/2;
@@ -213,11 +217,29 @@ void drawLine(vector2_t point1, vector2_t point2, int* buffer, int width, int he
     }
 }
 
-void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
-    int* buffer, int width, int height, color_t color[3],
-    triangle_draw_mode_t triangle_mode, float* zbuffer, float z1, float z2, float z3)
+color_t fetch_pixel(unsigned char *surface, int x, int y, int width, int height)
 {
 
+    if (x < 0 || y < 0 || y > 2047 || x > 2047) return { 0,0,0,255 };
+
+    char r = surface[(x + y * width) * 4 + 0];
+    char g = surface[(x + y * width) * 4 + 1];
+    char b = surface[(x + y * width) * 4 + 2];
+
+    return {
+            (float)r,
+            (float)g,
+            (float)b,
+            255
+    };
+}
+
+void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
+    int* buffer, int width, int height, color_t color[3],
+    triangle_draw_mode_t triangle_mode, float* zbuffer, 
+    float z1, float z2, float z3, 
+    float uvs[6], unsigned char *texture)
+{
     vector2_t points[3];
 
     {
@@ -267,7 +289,7 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
         }
     }
 
-    int xintersect = (points[0].x + (points[1].y - points[0].y) / (points[2].y - points[0].y) * (points[2].x - points[0].x));
+    float xintersect = (points[0].x + (points[1].y - points[0].y) / (points[2].y - points[0].y) * (points[2].x - points[0].x));
 
     float startx = points[0].x, endx = points[0].x;
 
@@ -289,17 +311,14 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
     case FILLED:
         for (float y = points[0].y; y <= points[1].y; y++)
         {
-            for (int x = startx; x <= endx; x++)
+            int x = startx;
+            if (startx > endx) x = endx;
+            for (int i = 0; i <= fabs(startx - endx) + 1; i++)
             {
                 vector2_t point = { x, y };
-                float surface1 = triangle_surface(point, point3, point2) / full_surface;
-                float surface2 = triangle_surface(point, point2, point1) / full_surface;
-                float surface3 = triangle_surface(point, point1, point3) / full_surface;
-
-                //if (surface1 < minb) surface1 = minb;
-                //if (surface2 < minb) surface2 = minb;
-                //if (surface3 < minb) surface3 = minb;
-
+                float surface1 = triangle_surface(point, point3, point2)/full_surface;
+                float surface2 = triangle_surface(point, point2, point1)/full_surface;
+                float surface3 = triangle_surface(point, point1, point3)/full_surface;
 
                 color_t final_color = {
                     (int)(surface1 * color[0].r + surface2 * color[1].r + surface3 * color[2].r),
@@ -307,33 +326,12 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
                     (int)(surface1 * color[0].b + surface2 * color[1].b + surface3 * color[2].b)
                 };
 
-                float z_interpolate = 1.0 / (surface1 * 1.0 / z1 + surface3 * 1.0 / z2 + surface2 * 1.0 / z3) * 255;
+                float z_interpolate = 1.0 / (surface1 * 1.0 / z1 + surface3 * 1.0 / z2 + surface2 * 1.0 / z3) * 15;
 
-                int index = (int)((int)(y)*width + (x));
+                int uvx_interpolate = (int)(surface1 * 2048 * uvs[0] + surface2 * 2048 * uvs[4] + surface3 * 2048 * uvs[2]);
+                int uvy_interpolate = (int)(surface1 * 2048 * uvs[1] + surface2 * 2048 * uvs[5] + surface3 * 2048 * uvs[3]);
 
-                if (index >= 0 && index < width * height && z_interpolate >= zbuffer[index])
-                {
-                    zbuffer[index] = z_interpolate;
-                    draw_pixel(x, y, buffer, width, height, final_color);
-                }
-            }
-            for (int x = endx; x <= startx; x++)
-            {
-                vector2_t point = { x, y };
-                float surface1 = triangle_surface(point, point3, point2) / full_surface;
-                float surface2 = triangle_surface(point, point2, point1) / full_surface;
-                float surface3 = triangle_surface(point, point1, point3) / full_surface;
-
-                //if (surface1 < minb) surface1 = minb;
-                //if (surface2 < minb) surface2 = minb;
-                //if (surface3 < minb) surface3 = minb;
-
-                color_t final_color = {
-                    (int)(surface1 * color[0].r + surface2 * color[1].r + surface3 * color[2].r),
-                    (int)(surface1 * color[0].g + surface2 * color[1].g + surface3 * color[2].g),
-                    (int)(surface1 * color[0].b + surface2 * color[1].b + surface3 * color[2].b)
-                };
-                float z_interpolate = 1.0 / (surface1 * 1.0 / z1 + surface3 * 1.0 / z2 + surface2 * 1.0 / z3) * 255;
+                color_t final_colort = fetch_pixel(texture, uvx_interpolate, uvy_interpolate, 2048, 2048);
 
 
                 int index = (int)((int)(y)*width + (x));
@@ -341,9 +339,9 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
                 if (index >= 0 && index < width * height && z_interpolate >= zbuffer[index])
                 {
                     zbuffer[index] = z_interpolate;
-                    draw_pixel(x, y, buffer, width, height, final_color);
+                    draw_pixel(x, y, buffer, width, height, final_colort);
                 }
-
+                x++;
             }
             startx += d1;
             endx += d2;
@@ -357,58 +355,36 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
 
         for (float y = points[1].y; y <= points[2].y; y++)
         {
-            for (int x = startx; x <= endx; x++)
+            int x = startx;
+            if (startx > endx) x = endx;
+            for (int i = 0; i <= fabs(startx - endx) + 1; i++)
             {
                 vector2_t point = { x, y };
                 float surface1 = (triangle_surface(point, point3, point2) / full_surface);
                 float surface2 = (triangle_surface(point, point2, point1) / full_surface);
                 float surface3 = (triangle_surface(point, point1, point3) / full_surface);
 
-                //if (surface1 < minb) surface1 = minb;
-                //if (surface2 < minb) surface2 = minb;
-                //if (surface3 < minb) surface3 = minb;
-
                 color_t final_color = {
                     (int)(surface1 * color[0].r + surface2 * color[1].r + surface3 * color[2].r) ,
                     (int)(surface1 * color[0].g + surface2 * color[1].g + surface3 * color[2].g) ,
                     (int)(surface1 * color[0].b + surface2 * color[1].b + surface3 * color[2].b)
                 };
-                float z_interpolate = 1.0 / (surface1 * 1.0 / z1 + surface3 * 1.0 / z2 + surface2 * 1.0 / z3) * 255;
+                float z_interpolate = 1.0 / (surface1 * 1.0 / z1 + surface3 * 1.0 / z2 + surface2 * 1.0 / z3) * 15;
 
                 int index = (int)((int)(y)*width + (x));
 
-                if (index >= 0 && index < width * height && z_interpolate >= zbuffer[index])
-                {
-                    zbuffer[index] = z_interpolate;
-                    draw_pixel(x, y, buffer, width, height, final_color);
-                }
+                int uvx_interpolate = (int)(surface1 * 2048 * uvs[0] + surface2 * 2048 * uvs[4] + surface3 * 2048 * uvs[2]);
+                int uvy_interpolate = (int)(surface1 * 2048 * uvs[1] + surface2 * 2048 * uvs[5] + surface3 * 2048 * uvs[3]);
 
-            }
-            for (int x = endx; x <= startx; x++)
-            {
-                vector2_t point = { x, y };
-                float surface1 = triangle_surface(point, point3, point2) / full_surface;
-                float surface2 = triangle_surface(point, point2, point1) / full_surface;
-                float surface3 = triangle_surface(point, point1, point3) / full_surface;
+                color_t final_colort = fetch_pixel(texture, uvx_interpolate, uvy_interpolate, 2048, 2048);
 
-                //if (surface1 < minb) surface1 = minb;
-                //if (surface2 < minb) surface2 = minb;
-                //if (surface3 < minb) surface3 = minb;
-
-                color_t final_color = {
-                    (surface1 * color[0].r + surface2 * color[1].r + surface3 * color[2].r),
-                    (surface1 * color[0].g + surface2 * color[1].g + surface3 * color[2].g),
-                    (surface1 * color[0].b + surface2 * color[1].b + surface3 * color[2].b)
-                };
-                float z_interpolate = 1.0 / (surface1 * 1.0 / z1 + surface3 * 1.0 / z2 + surface2 * 1.0 / z3) * 255;
-
-                int index = (int)((int)(y)*width + x);
 
                 if (index >= 0 && index < width * height && z_interpolate >= zbuffer[index])
                 {
                     zbuffer[index] = z_interpolate;
-                    draw_pixel(x, y, buffer, width, height, final_color);
+                    draw_pixel(x, y, buffer, width, height, final_colort);
                 }
+                x++;
             }
             startx += d1;
             endx += d2;
@@ -417,18 +393,6 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3,
     default:
         break;
     }
-}
-
-float rad_to_deg(float angle)
-{
-    return 3.14 / 180 * angle;
-}
-
-vector4_t normalize_vector(vector4_t vector)
-{
-    float length = sqrt(dot_product(vector, vector));
-
-    return {vector.x/length,vector.y/length, vector.z/length, 1};
 }
 
 int main(int argc, char* argv[])
@@ -468,7 +432,7 @@ int main(int argc, char* argv[])
         {0, 0, 0, 1}
     };
 
-    vector4_t transform = {0.0, -0.1, -0.7, 1.0};
+    vector4_t transform = {0.0, -0.1, -2.9, 1.0};
 
     matrix4_t transform_matrix =
     {
@@ -478,15 +442,22 @@ int main(int argc, char* argv[])
         {0, 0, 0,           1}
     };
 
+
+    int* pixs = (int*)pixels;
+
     float fov = 90.0;
    
     float aspect_ratio = (float)width/(float)height;
     
-    mesh_t* meshes = extract_meshes("girl.obj");
+    // model texture here
+    int w, h, channels;
+    unsigned char* texture = stbi_load("models/PikaGirl_C.png", &w, &h, &channels, 4);
 
+    if (!texture) printf("bad texture\n");
+
+    mesh_t* meshes = extract_meshes("models/suzan.obj");
     if (!meshes) { return 1; }
-
-    //return 0;
+    
     while (1)
     {
         float n = 0.01, f = 1000.0;
@@ -497,7 +468,7 @@ int main(int argc, char* argv[])
             { n/r,   0,            0,                 0},
             {   0, n/t,            0,                 0},
             {   0,   0, -(f+n)/(f-n),    -2*(f*n)/(f-n)},
-            {   0,   0,           -1,                 1}
+            {   0,   0,           -1,                 0}
         };
 
         int mouseX, mouseY;
@@ -532,11 +503,10 @@ int main(int argc, char* argv[])
                 return 0;
             if (ev.type == SDL_KEYDOWN)
             {
-                fov++;
+                fov--;
             }
         }
         {
-            int* pixs = (int*)pixels;
 
             // reset depth buffer
             for (int i = 0; i < height; i++)
@@ -549,26 +519,28 @@ int main(int argc, char* argv[])
                     draw_pixel(j, i, pixs, width, height, { 0, 0, 0, 255 });
 
             for (int i = 0; i < faces_numbers; i++)
-            {
+            {                
                 vector4_t vertex1 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[0], meshes[i].vertecies[1], meshes[i].vertecies[2], 1 });
                 vector4_t vertex2 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[3], meshes[i].vertecies[4], meshes[i].vertecies[5], 1 });
                 vector4_t vertex3 = multiply_matrix_vector(identity_matrix, { meshes[i].vertecies[6], meshes[i].vertecies[7], meshes[i].vertecies[8], 1 });
 
-                vertex1.x /= 2; vertex1.y /= 2; vertex1.z /= 2;
-                vertex2.x /= 2; vertex2.y /= 2; vertex2.z /= 2;
-                vertex3.x /= 2; vertex3.y /= 2; vertex3.z /= 2;
+                {
+                    vertex1.x /= 2; vertex1.y /= 2; vertex1.z /= 2;
+                    vertex2.x /= 2; vertex2.y /= 2; vertex2.z /= 2;
+                    vertex3.x /= 2; vertex3.y /= 2; vertex3.z /= 2;
 
-                vertex1 = multiply_matrix_vector(rotation, vertex1);
-                vertex2 = multiply_matrix_vector(rotation, vertex2);
-                vertex3 = multiply_matrix_vector(rotation, vertex3);
+                    vertex1 = multiply_matrix_vector(rotation, vertex1);
+                    vertex2 = multiply_matrix_vector(rotation, vertex2);
+                    vertex3 = multiply_matrix_vector(rotation, vertex3);
 
-                vertex1 = multiply_matrix_vector(transform_matrix, vertex1);
-                vertex2 = multiply_matrix_vector(transform_matrix, vertex2);
-                vertex3 = multiply_matrix_vector(transform_matrix, vertex3);
+                    vertex1 = multiply_matrix_vector(transform_matrix, vertex1);
+                    vertex2 = multiply_matrix_vector(transform_matrix, vertex2);
+                    vertex3 = multiply_matrix_vector(transform_matrix, vertex3);
 
-                vertex1 = multiply_matrix_vector(perspective_matrix, vertex1);
-                vertex2 = multiply_matrix_vector(perspective_matrix, vertex2);
-                vertex3 = multiply_matrix_vector(perspective_matrix, vertex3);
+                    vertex1 = multiply_matrix_vector(perspective_matrix, vertex1);
+                    vertex2 = multiply_matrix_vector(perspective_matrix, vertex2);
+                    vertex3 = multiply_matrix_vector(perspective_matrix, vertex3);
+                }
 
                 // calculate normals here for face culling
                 vector4_t normal = normalize_vector(cross_product_4d(sub_vector4(vertex1, vertex3), sub_vector4(vertex1, vertex2)));
@@ -578,28 +550,29 @@ int main(int argc, char* argv[])
                 if (scalar_n > 0.0)  // 
                     continue;
 
-                vertex1 = multiply_matrix_vector(view_matrix, vertex1);
-                vertex2 = multiply_matrix_vector(view_matrix, vertex2);
-                vertex3 = multiply_matrix_vector(view_matrix, vertex3);
+                {
+                    vertex1 = multiply_matrix_vector(view_matrix, vertex1);
+                    vertex2 = multiply_matrix_vector(view_matrix, vertex2);
+                    vertex3 = multiply_matrix_vector(view_matrix, vertex3);
 
-                vertex1.x /= vertex1.w;
-                vertex1.y /= vertex1.w;
-                vertex1.z /= vertex1.w;
+                    vertex1.x /= vertex1.w;
+                    vertex1.y /= vertex1.w;
+                    vertex1.z /= vertex1.w;
 
-                vertex2.x /= vertex2.w;
-                vertex2.y /= vertex2.w;
-                vertex2.z /= vertex2.w;
+                    vertex2.x /= vertex2.w;
+                    vertex2.y /= vertex2.w;
+                    vertex2.z /= vertex2.w;
 
-                vertex3.x /= vertex3.w;
-                vertex3.y /= vertex3.w;
-                vertex3.z /= vertex3.w;
+                    vertex3.x /= vertex3.w;
+                    vertex3.y /= vertex3.w;
+                    vertex3.z /= vertex3.w;
+                }
 
-                if (vertex3.z > 1 || vertex2.z > 1 || vertex1.z > 1) continue;
+                if (vertex3.z >= 0.9 || vertex2.z >= 0.9 || vertex1.z >= 0.9) continue;
 
                 vector2_t point1 = convert_to_screen_space(vertex1, width, height);
                 vector2_t point2 = convert_to_screen_space(vertex2, width, height);
                 vector2_t point3 = convert_to_screen_space(vertex3, width, height);
-
 
                 color_t col[3] =
                 {
@@ -608,9 +581,10 @@ int main(int argc, char* argv[])
                     { -scalar_n * 255, -scalar_n * 255, -scalar_n * 255, 1 }
                 };
 
-                drawTriangle(point1, point2, point3, pixs, width, height, col, FILLED, zbuffer, vertex1.z, vertex2.z, vertex3.z);
+                drawTriangle(point1, point2, point3, pixs, width, height, col, FILLED, zbuffer, vertex1.z, vertex2.z, vertex3.z, meshes[i].uvs, texture);
             }
         }
+
         SDL_UnlockTexture(surface);
 
         SDL_RenderCopy(renderer, surface, NULL, NULL);
