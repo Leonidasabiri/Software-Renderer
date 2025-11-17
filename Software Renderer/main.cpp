@@ -372,8 +372,9 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3, renderer
 
                 float z_interpolate = 1.0 / (surface1/z1 + surface3/z2 + surface2/z3);
 
-                int uvx_interpolate = (int)((surface1 * uvs[0] + surface2 * uvs[2] + surface3 * uvs[4]) * model_texture.width);
-                int uvy_interpolate = (int)((surface1 * uvs[1] + surface2 * uvs[3] + surface3 * uvs[5]) * model_texture.height);
+                float uvx_interpolate = (surface1 * uvs[1] + surface2 * uvs[5] + surface3 * uvs[3]) * z_interpolate * model_texture.width;     
+                float uvy_interpolate = (surface1 * uvs[0] + surface2 * uvs[4] + surface3 * uvs[2]) * z_interpolate * model_texture.height;
+
 
                 color_t final_colort = fetch_pixel(model_texture.texture,
                     uvx_interpolate,
@@ -435,8 +436,8 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3, renderer
 
                 int index = (int)((int)(y)*width + (x));
 
-                int uvx_interpolate = (int)((surface1 * uvs[0] + surface2 * uvs[2] + surface3 * uvs[4]) * model_texture.width);
-                int uvy_interpolate = (int)((surface1 * uvs[1] + surface2 * uvs[3] + surface3 * uvs[5]) * model_texture.height);
+                float uvx_interpolate = (surface1 * uvs[1] + surface2 * uvs[5] + surface3 * uvs[3]) * z_interpolate * model_texture.width;
+                float uvy_interpolate = (surface1 * uvs[0] + surface2 * uvs[4] + surface3 * uvs[2]) * z_interpolate * model_texture.height;
 
                 color_t final_colort = fetch_pixel(model_texture.texture,
                     uvx_interpolate,
@@ -463,7 +464,6 @@ void drawTriangle(vector2_t point1, vector2_t point2, vector2_t point3, renderer
                         default:
                             break;
                     }
-
                 }
                 x++;
             }
@@ -527,7 +527,7 @@ int main(int argc, char* argv[])
     software_renderer.depth_buffer.depth_pixels = (float*)malloc(width * height * sizeof(width * height));
     software_renderer.pass_display = DEPTH_COLOR;
 
-    model.meshes = extract_meshes("models/utah.obj");
+    model.meshes = extract_meshes("models/girl.obj");
     int w, h, channels;
     model.model_texture.texture = stbi_load("models/uv1.png", &w, &h, &channels, 4);
     model.model_texture.width = w;
@@ -563,7 +563,6 @@ int main(int argc, char* argv[])
         int mouseX, mouseY;
         SDL_GetMouseState(&mouseX, &mouseY);
 
-        //if (-mouseY <= -250 || -mouseY <= 250)
         angle = 180 + mouseY;
         anglez = mouseX;
 
@@ -621,7 +620,6 @@ int main(int argc, char* argv[])
             }
         }
         {
-
             // reset depth buffer
             for (int i = 0; i < height; i++)
                 for (int j = 0; j < width; j++)
@@ -711,13 +709,13 @@ int main(int argc, char* argv[])
                 };
 
                 float uvs[6] = {
-                    model.meshes[i].uvs[0],
-                    model.meshes[i].uvs[1],
-                    model.meshes[i].uvs[2],
-                    model.meshes[i].uvs[3],
-                    model.meshes[i].uvs[4],
-                    model.meshes[i].uvs[5],
-                };
+                    model.meshes[i].uvs[0]/-vertex1.w,
+                    model.meshes[i].uvs[1]/-vertex1.w,
+                    model.meshes[i].uvs[2]/-vertex2.w,
+                    model.meshes[i].uvs[3]/-vertex2.w,
+                    model.meshes[i].uvs[4]/-vertex3.w,
+                    model.meshes[i].uvs[5]/-vertex3.w
+                };                         
                 drawTriangle(point1, point2, point3, software_renderer, col, FILLED, -vertex1.w, -vertex2.w, -vertex3.w, uvs, model.model_texture);
             }
         }
