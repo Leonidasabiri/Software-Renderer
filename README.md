@@ -4,6 +4,14 @@
 
 Still a work in progress.
 
+### Features:
+- [X] Perspective projection
+- [X] Perspective correct texturing
+- [X] Correct depth testing
+- [ ] Phong shading model
+- [ ] Shadows
+- [ ] Normal maps with tangent space
+
 ### Neutral color preview
 |                                     utah teapot                                       |           Suzan head   (the infamous CGI monkey) 
 |:-------------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------:|
