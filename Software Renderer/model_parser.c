@@ -7,9 +7,9 @@
 
 typedef struct
 {
-	float vertecies[9];
-	float normals[9];
+	float vertecies[12];
 	float uvs[6];
+	float normals[9];
 }mesh_t;
 
 int vertex_numbers = 0;
@@ -226,16 +226,19 @@ mesh_t *extract_meshes(const char* model_path)
 		meshes[i].vertecies[0] = vertecies[(v_indecies[vn + 0] - 1) * 3 + 0];
 		meshes[i].vertecies[1] = vertecies[(v_indecies[vn + 0] - 1) * 3 + 1];
 		meshes[i].vertecies[2] = vertecies[(v_indecies[vn + 0] - 1) * 3 + 2];
+		meshes[i].vertecies[3] = 1;	// w
 
 		//// v2
-		meshes[i].vertecies[3] = vertecies[(v_indecies[vn + 1] - 1) * 3 + 0];
-		meshes[i].vertecies[4] = vertecies[(v_indecies[vn + 1] - 1) * 3 + 1];
-		meshes[i].vertecies[5] = vertecies[(v_indecies[vn + 1] - 1) * 3 + 2];
+		meshes[i].vertecies[4] = vertecies[(v_indecies[vn + 1] - 1) * 3 + 0];
+		meshes[i].vertecies[5] = vertecies[(v_indecies[vn + 1] - 1) * 3 + 1];
+		meshes[i].vertecies[6] = vertecies[(v_indecies[vn + 1] - 1) * 3 + 2];
+		meshes[i].vertecies[7] = 1;	// w
 
 		//// v 3
-		meshes[i].vertecies[6] = vertecies[(v_indecies[vn + 2] - 1) * 3 + 0];
-		meshes[i].vertecies[7] = vertecies[(v_indecies[vn + 2] - 1) * 3 + 1];
-		meshes[i].vertecies[8] = vertecies[(v_indecies[vn + 2] - 1) * 3 + 2];
+		meshes[i].vertecies[8] = vertecies[(v_indecies[vn + 2] - 1) * 3 + 0];
+		meshes[i].vertecies[9] = vertecies[(v_indecies[vn + 2] - 1) * 3 + 1];
+		meshes[i].vertecies[10] = vertecies[(v_indecies[vn + 2] - 1) * 3 + 2];
+		meshes[i].vertecies[11] = 1; // w
 
 		i++;
 	}
@@ -245,7 +248,7 @@ mesh_t *extract_meshes(const char* model_path)
 		// v1
 		meshes[i].uvs[0] = uvs[(vt_indecies[vn + 0] - 1) * 2 + 0];
 		meshes[i].uvs[1] = uvs[(vt_indecies[vn + 0] - 1) * 2 + 1];
-		
+
 		// v2
 		meshes[i].uvs[2] = uvs[(vt_indecies[vn + 1] - 1) * 2 + 0];
 		meshes[i].uvs[3] = uvs[(vt_indecies[vn + 1] - 1) * 2 + 1];
@@ -259,4 +262,3 @@ mesh_t *extract_meshes(const char* model_path)
 
 	return meshes;
 }
-
