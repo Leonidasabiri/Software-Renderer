@@ -7,147 +7,6 @@
 #include "renderer.h"
 #include "math.h"
 
-typedef struct
-{
-    mesh_t*     meshes;
-    texture_t   model_texture;
-}model_t;
-
-typedef struct
-{
-    vector4_t     position;
-    color_t       color;
-    float         intensity;
-}light_t;
-
-matrix4_t multiply_matrix_matrix(matrix4_t matrix4_1, matrix4_t matrix4_2)
-{
-    float xx = matrix4_1.x.x * matrix4_2.x.x + matrix4_1.x.y * matrix4_2.y.x + matrix4_1.x.z * matrix4_2.z.x + matrix4_1.x.w * matrix4_2.w.x;
-    float xy = matrix4_1.x.x * matrix4_2.x.y + matrix4_1.x.y * matrix4_2.y.y + matrix4_1.x.z * matrix4_2.z.y + matrix4_1.x.w * matrix4_2.w.y;
-    float xz = matrix4_1.x.x * matrix4_2.x.z + matrix4_1.x.y * matrix4_2.y.z + matrix4_1.x.z * matrix4_2.z.z + matrix4_1.x.w * matrix4_2.w.z;
-    float xw = matrix4_1.x.x * matrix4_2.x.w + matrix4_1.x.y * matrix4_2.y.w + matrix4_1.x.z * matrix4_2.z.w + matrix4_1.x.w * matrix4_2.w.w;
-
-    float yx = matrix4_1.y.x * matrix4_2.x.x + matrix4_1.y.y * matrix4_2.y.x + matrix4_1.y.z * matrix4_2.z.x + matrix4_1.y.w * matrix4_2.w.x;
-    float yy = matrix4_1.y.x * matrix4_2.x.y + matrix4_1.y.y * matrix4_2.y.y + matrix4_1.y.z * matrix4_2.z.y + matrix4_1.y.w * matrix4_2.w.y;
-    float yz = matrix4_1.y.x * matrix4_2.x.z + matrix4_1.y.y * matrix4_2.y.z + matrix4_1.y.z * matrix4_2.z.z + matrix4_1.y.w * matrix4_2.w.z;
-    float yw = matrix4_1.y.x * matrix4_2.x.w + matrix4_1.y.y * matrix4_2.y.w + matrix4_1.y.z * matrix4_2.z.w + matrix4_1.y.w * matrix4_2.w.w;
-
-    float zx = matrix4_1.z.x * matrix4_2.x.x + matrix4_1.z.y * matrix4_2.y.x + matrix4_1.z.z * matrix4_2.z.x + matrix4_1.z.w * matrix4_2.w.x;
-    float zy = matrix4_1.z.x * matrix4_2.x.y + matrix4_1.z.y * matrix4_2.y.y + matrix4_1.z.z * matrix4_2.z.y + matrix4_1.z.w * matrix4_2.w.y;
-    float zz = matrix4_1.z.x * matrix4_2.x.z + matrix4_1.z.y * matrix4_2.y.z + matrix4_1.z.z * matrix4_2.z.z + matrix4_1.z.w * matrix4_2.w.z;
-    float zw = matrix4_1.z.x * matrix4_2.x.w + matrix4_1.z.y * matrix4_2.y.x + matrix4_1.z.z * matrix4_2.z.w + matrix4_1.z.w * matrix4_2.w.w;
-
-    float wx = matrix4_1.w.x * matrix4_2.x.x + matrix4_1.w.y * matrix4_2.y.x + matrix4_1.w.z * matrix4_2.z.x + matrix4_1.w.w * matrix4_2.w.x;
-    float wy = matrix4_1.w.x * matrix4_2.x.y + matrix4_1.w.y * matrix4_2.y.y + matrix4_1.w.z * matrix4_2.z.y + matrix4_1.w.w * matrix4_2.w.y;
-    float wz = matrix4_1.w.x * matrix4_2.x.z + matrix4_1.w.y * matrix4_2.y.z + matrix4_1.w.z * matrix4_2.z.z + matrix4_1.w.w * matrix4_2.w.z;
-    float ww = matrix4_1.w.x * matrix4_2.x.w + matrix4_1.w.y * matrix4_2.y.w + matrix4_1.w.z * matrix4_2.z.w + matrix4_1.w.w * matrix4_2.w.w;
-
-    vector4_t x = { xx, xy, xz, xw };
-    vector4_t y = { yx, yy, yz, yw };
-    vector4_t z = { zx, zy, zz, zw };
-    vector4_t w = { wx, wy, wz, ww };
-
-    return
-    {
-        x,
-        y,
-        z,
-        w
-    };
-}
-
-matrix4_t add_matrix_matrix(matrix4_t matrix4_1, matrix4_t matrix4_2)
-{
-    return
-    {
-       {matrix4_1.x.x + matrix4_2.x.x, matrix4_1.x.y + matrix4_2.x.y, matrix4_1.x.z + matrix4_2.x.z, matrix4_1.x.w + matrix4_2.x.w},
-       {matrix4_1.y.x + matrix4_2.y.x, matrix4_1.y.y + matrix4_2.y.y, matrix4_1.y.z + matrix4_2.y.z, matrix4_1.y.w + matrix4_2.y.w},
-       {matrix4_1.z.x + matrix4_2.z.x, matrix4_1.z.y + matrix4_2.z.y, matrix4_1.z.z + matrix4_2.z.z, matrix4_1.z.w + matrix4_2.z.w},
-       {matrix4_1.w.x + matrix4_2.w.x, matrix4_1.w.y + matrix4_2.w.y, matrix4_1.w.z + matrix4_2.w.z, matrix4_1.w.w + matrix4_2.w.w}
-    };
-}
-
-vector2_t sub_vector(vector2_t vector1, vector2_t vector2)
-{
-    return { vector1.x - vector2.x, vector1.y - vector2.y };
-}
-
-vector4_t sub_vector4(vector4_t vector1, vector4_t vector2)
-{
-    return { vector1.x - vector2.x, 
-             vector1.y - vector2.y,
-             vector1.z - vector2.z,
-             1.0};
-}
-
-float dot_product(vector4_t vector1, vector4_t vector2)
-{
-    return vector1.x * vector2.x + vector1.y * vector2.y + vector1.z * vector2.z;
-}
-
-vector4_t multiply_matrix_vector(matrix4_t matrix4_1, vector4_t vector)
-{
-    return
-    {
-       matrix4_1.x.x * vector.x + matrix4_1.x.y * vector.y + matrix4_1.x.z * vector.z + matrix4_1.x.w * vector.w,
-       matrix4_1.y.x * vector.x + matrix4_1.y.y * vector.y + matrix4_1.y.z * vector.z + matrix4_1.y.w * vector.w,
-       matrix4_1.z.x * vector.x + matrix4_1.z.y * vector.y + matrix4_1.z.z * vector.z + matrix4_1.z.w * vector.w,
-       matrix4_1.w.x * vector.x + matrix4_1.w.y * vector.y + matrix4_1.w.z * vector.z + matrix4_1.w.w * vector.w
-    };
-}
-
-matrix4_t matrix4x4_transpose(matrix4_t matrix4_1)
-{
-    return
-    {
-       {matrix4_1.x.x, matrix4_1.y.x, matrix4_1.z.x, matrix4_1.w.x},
-       {matrix4_1.x.y, matrix4_1.y.y, matrix4_1.z.y, matrix4_1.w.y},
-       {matrix4_1.x.z, matrix4_1.y.z, matrix4_1.z.z, matrix4_1.w.z},
-       {matrix4_1.x.w, matrix4_1.y.w, matrix4_1.z.w, matrix4_1.w.w}
-    };
-}
-
-float cross_product_2d(vector2_t vector1, vector2_t vector2)
-{
-    return vector1.x * vector2.y - vector1.y * vector2.x;
-}
-
-vector4_t cross_product_4d(vector4_t vector1, vector4_t vector2)
-{
-    return
-    {
-        vector1.y * vector2.z - vector1.z * vector2.y,
-        vector1.z * vector2.x - vector1.x * vector2.z,
-        vector1.x * vector2.y - vector1.y * vector2.x,
-        1.0
-    };
-}
-
-float rad_to_deg(float angle)
-{
-    return 3.14 / 180 * angle;
-}
-
-vector4_t normalize_vector(vector4_t vector)
-{
-    float length = sqrt(dot_product(vector, vector));
-
-    return { vector.x / length,vector.y / length, vector.z / length, 1 };
-}
-
-float triangle_surface(vector2_t pos1, vector2_t pos2, vector2_t pos3)
-{
-    return cross_product_2d(sub_vector(pos1, pos2), sub_vector(pos3, pos2)) * 1 / 2;
-}
-
-void draw_pixel(int x, int y, int* buffer, int width, int height, color_t color)
-{
-    if (x < 0 || y < 0 || x > width || y > height)
-        return;
-    int pos = (x + y * width);
-    buffer[pos] = (int)color.r << 24 | (int)color.g << 16 | (int)color.b << 8 | (int)color.a;
-}
-
 vector2_t convert_to_screen_space(vector4_t pos, int width, int height)
 {
     vector2_t screen_space;
@@ -156,6 +15,14 @@ vector2_t convert_to_screen_space(vector4_t pos, int width, int height)
     screen_space.y = (-pos.y + 1) * height/2;
 
     return screen_space;
+}
+
+void draw_pixel(int x, int y, int* buffer, int width, int height, color_t color)
+{
+    if (x < 0 || y < 0 || x > width || y > height)
+        return;
+    int pos = (x + y * width);
+    buffer[pos] = (int)color.r << 24 | (int)color.g << 16 | (int)color.b << 8 | (int)color.a;
 }
 
 void drawLine(vector2_t point1, vector2_t point2, int* buffer, int width, int height, color_t color)
@@ -221,7 +88,12 @@ color_t fetch_pixel(unsigned char *surface, int x, int y, int width, int height)
     };
 }
 
-void drawTriangle(mesh_t triangle, renderer_t software_renderer, triangle_draw_mode_t triangle_mode, texture_t model_texture)
+void pixel_shading(renderer_t software_renderer, vector4_t pixel_world_pos)
+{
+    // do any kind of shading for any pixel here
+}
+
+void drawTriangle(mesh_t triangle, renderer_t software_renderer, triangle_draw_mode_t triangle_mode, texture_t model_texture, vector4_t normal)
 {
     color_t color[3] = {255, 255, 255, 255};
 
@@ -229,7 +101,7 @@ void drawTriangle(mesh_t triangle, renderer_t software_renderer, triangle_draw_m
     vector4_t vertex2 = { triangle.vertecies[4], triangle.vertecies[5], triangle.vertecies[6], triangle.vertecies[7] };
     vector4_t vertex3 = { triangle.vertecies[8], triangle.vertecies[9], triangle.vertecies[10], triangle.vertecies[11] };
 
-    float z1 = -vertex1.w, z2 = -vertex2.w, z3 = -vertex3.w;
+    float z1 = vertex1.z, z2 = vertex2.z, z3 = vertex3.z;
 
     vector2_t point1 = convert_to_screen_space(vertex1, software_renderer.frame_buffer.width, software_renderer.frame_buffer.height);
     vector2_t point2 = convert_to_screen_space(vertex2, software_renderer.frame_buffer.width, software_renderer.frame_buffer.height);
@@ -324,9 +196,51 @@ void drawTriangle(mesh_t triangle, renderer_t software_renderer, triangle_draw_m
                     uvy_interpolate,
                     model_texture.width, model_texture.height);
 
+
+                vector4_t pixel_world_pos = {
+                    point.x/(software_renderer.frame_buffer.width/2) - 1,
+                    -point.y/(software_renderer.frame_buffer.height/2) + 1,
+                    z_interpolate,
+                    1
+                }; 
+                
+                color_t normal_color;
+
+                normal_color.r = 0;
+                normal_color.g = 0;
+                normal_color.b = 0;
+                normal_color.a = 255;
+                if (normal.x >= 0)
+                    normal_color.r = normal.x * 255;
+                if (normal.y >= 0)
+                    normal_color.g = normal.y * 255;
+                if (normal.z >= 0)
+                    normal_color.b = normal.z * 255;
+
+                final_colort.r *= 0.5;
+                final_colort.g *= 0.5;
+                final_colort.b *= 0.5;
+
+                for (int iter = 0; iter < software_renderer.light_count; iter++)
+                {
+                    light_t light = software_renderer.light_sources[iter];
+                    vector4_t lightdir = normalize_vector(sub_vector4(pixel_world_pos, light.position));
+                    float diffuse = dot_product(normal, lightdir);
+
+                    if (diffuse < 0) diffuse = 0;
+
+                    final_colort.r = final_colort.r + diffuse * light.color.r * light.intensity;
+                    final_colort.g = final_colort.g + diffuse * light.color.g * light.intensity;
+                    final_colort.b = final_colort.b + diffuse * light.color.b * light.intensity;
+
+                    //final_colort.r = pixel_world_pos.x * 255 < 0 ? 0 : pixel_world_pos.x * 255;
+                    //final_colort.g = pixel_world_pos.y * 255 < 0 ? 0 : pixel_world_pos.y * 255;
+                    //final_colort.b = pixel_world_pos.z * 255 < 0 ? 0 : pixel_world_pos.z * 255;
+                }
+
                 int index = (int)((int)(y)*width + (x));
 
-                if (index >= 0 && index < width * height && z_interpolate >= software_renderer.depth_buffer.depth_pixels[index])
+                if (index >= 0 && index < width * height && z_interpolate <= software_renderer.depth_buffer.depth_pixels[index])
                 {
                     software_renderer.depth_buffer.depth_pixels[index] = z_interpolate;
 
@@ -336,12 +250,14 @@ void drawTriangle(mesh_t triangle, renderer_t software_renderer, triangle_draw_m
                             draw_pixel(x, y, software_renderer.frame_buffer.pixels, width, height, final_colort);
                             break;
                         case DEPTH_COLOR:
-                            draw_pixel(x, y, software_renderer.frame_buffer.pixels, width, height, { (float)(z_interpolate),(float)(z_interpolate), (float)(z_interpolate), 255 });
+                            draw_pixel(x, y, software_renderer.frame_buffer.pixels, width, height, { (z_interpolate), (z_interpolate), (z_interpolate), 255 });
+                            break;
+                        case NORMALS_COLOR:
+                            draw_pixel(x, y, software_renderer.frame_buffer.pixels, width, height, normal_color);
                             break;
                         default:
                             break;
                     }
-
                 }
                 x++;
             }
@@ -377,8 +293,49 @@ void drawTriangle(mesh_t triangle, renderer_t software_renderer, triangle_draw_m
                     uvx_interpolate,
                     uvy_interpolate,
                     model_texture.width, model_texture.height);
+                vector4_t pixel_world_pos = {
+                    point.x / (software_renderer.frame_buffer.width / 2) - 1,
+                    -point.y / (software_renderer.frame_buffer.height / 2) + 1,
+                    z_interpolate,
+                    1
+                };
 
-                if (index >= 0 && index < width * height && z_interpolate >= software_renderer.depth_buffer.depth_pixels[index])
+                color_t normal_color;
+
+                normal_color.r = 0;
+                normal_color.g = 0;
+                normal_color.b = 0;
+                
+                normal_color.a = 255;
+                if (normal.x >= 0)
+                    normal_color.r = normal.x * 255;
+                if (normal.y >= 0)
+                    normal_color.g = normal.y * 255;
+                if (normal.z >= 0)
+                    normal_color.b = normal.z * 255;
+
+                final_colort.r *= 0.5;
+                final_colort.g *= 0.5;
+                final_colort.b *= 0.5;
+
+                for (int iter = 0; iter < software_renderer.light_count; iter++)
+                {
+                    light_t light = software_renderer.light_sources[iter];
+                    vector4_t lightdir = normalize_vector(sub_vector4(pixel_world_pos, light.position));
+                    float diffuse = dot_product(normal, lightdir);                    
+
+                    if (diffuse < 0) diffuse = 0;                   
+
+                    final_colort.r = final_colort.r + diffuse * light.color.r * light.intensity;
+                    final_colort.g = final_colort.g + diffuse * light.color.g * light.intensity;
+                    final_colort.b = final_colort.b + diffuse * light.color.b * light.intensity;
+
+                    //final_colort.r = pixel_world_pos.x * 255 < 0 ? 0 : pixel_world_pos.x * 255;
+                    //final_colort.g = pixel_world_pos.y * 255 < 0 ? 0 : pixel_world_pos.y * 255;
+                    //final_colort.b = pixel_world_pos.z * 255 < 0 ? 0 : pixel_world_pos.z * 255;
+                }
+
+                if (index >= 0 && index < width * height && z_interpolate <= software_renderer.depth_buffer.depth_pixels[index])
                 {
                     software_renderer.depth_buffer.depth_pixels[index] = z_interpolate;
 
@@ -388,8 +345,11 @@ void drawTriangle(mesh_t triangle, renderer_t software_renderer, triangle_draw_m
                             draw_pixel(x, y, software_renderer.frame_buffer.pixels, width, height, final_colort);
                             break;
                         case DEPTH_COLOR:
-                            draw_pixel(x, y, software_renderer.frame_buffer.pixels, width, height, { (float)(z_interpolate),(float)(z_interpolate), (float)(z_interpolate), 255 });
-                            break;    
+                            draw_pixel(x, y, software_renderer.frame_buffer.pixels, width, height, { (z_interpolate),(z_interpolate), (z_interpolate), 255 });
+                            break;
+                        case NORMALS_COLOR:
+                            draw_pixel(x, y, software_renderer.frame_buffer.pixels, width, height, normal_color);
+                            break;
                         default:
                             break;
                     }
@@ -449,14 +409,27 @@ int main(int argc, char* argv[])
 
     renderer_t  software_renderer;
     model_t     model;
+    light_t     light = {
+        {1, 0, 0, 1},
+        {255, 0, 255, 255},
+        0.2
+    };
+    light_t     light2 = {
+        {-1, 0, 0, 1},
+        {0, 255, 0, 255},
+        0.2
+    };
 
     software_renderer.frame_buffer.pixels = (int*)pixels;
     software_renderer.frame_buffer.width = width;
     software_renderer.frame_buffer.height = height;
     software_renderer.depth_buffer.depth_pixels = (float*)malloc(width * height * sizeof(width * height));
     software_renderer.pass_display = DEPTH_COLOR;
+    software_renderer.light_count = 1;
+    software_renderer.light_sources[0] = light;
+    software_renderer.light_sources[1] = light2;
 
-    model.meshes = extract_meshes("models/girl.obj");
+    model.meshes = extract_meshes("models/suzan.obj");
     int w, h, channels;
     model.model_texture.texture = stbi_load("models/uv1.png", &w, &h, &channels, 4);
     model.model_texture.width = w;
@@ -466,8 +439,13 @@ int main(int argc, char* argv[])
 
     if (!model.meshes) { return 1; }
 
+    float o = 0;
     while (1)
     {
+        software_renderer.light_sources[0].position.x += sin(o);
+
+        o += 1;
+
         float n = 0.01, f = 1000.0;
         float t = tan(rad_to_deg(fov/2)) * n, r = t * aspect_ratio;
 
@@ -490,8 +468,8 @@ int main(int argc, char* argv[])
         int mouseX, mouseY;
         SDL_GetMouseState(&mouseX, &mouseY);
 
-        angle = 180 + mouseY;
-        anglez = mouseX;
+        angle = 180; //;180 + mouseY;
+        anglez += 1.5;//;mouseX;
 
         matrix4_t rotationx = {
             { 1,                       0,                        0, 0},
@@ -511,7 +489,7 @@ int main(int argc, char* argv[])
         matrix4_t model_view_projection_matrix = multiply_matrix_matrix(perspective_matrix, model_matrix);
 
         SDL_Event ev;
-        float py = 0;
+
         while (SDL_PollEvent(&ev))
         {
             if (ev.type == SDL_QUIT)
@@ -550,7 +528,7 @@ int main(int argc, char* argv[])
             // reset depth buffer
             for (int i = 0; i < height; i++)
                 for (int j = 0; j < width; j++)
-                    software_renderer.depth_buffer.depth_pixels[i * width + j] = -100000; // depth buffer reinitialized to -100000
+                    software_renderer.depth_buffer.depth_pixels[i * width + j] = 100000; // depth buffer reinitialized to -100000
 
             // clear window
             for (int i = 0; i < height; i++)
@@ -559,15 +537,14 @@ int main(int argc, char* argv[])
 
             for (int i = 0; i < faces_numbers; i++)
             {                
-                //continue;
                 vector4_t vertex1 = multiply_matrix_vector(identity_matrix, { model.meshes[i].vertecies[0], model.meshes[i].vertecies[1], model.meshes[i].vertecies[2], model.meshes[i].vertecies[3] });
                 vector4_t vertex2 = multiply_matrix_vector(identity_matrix, { model.meshes[i].vertecies[4], model.meshes[i].vertecies[5], model.meshes[i].vertecies[6], model.meshes[i].vertecies[7] });
                 vector4_t vertex3 = multiply_matrix_vector(identity_matrix, { model.meshes[i].vertecies[8], model.meshes[i].vertecies[9], model.meshes[i].vertecies[10], model.meshes[i].vertecies[11] });
 
                 {
-                    vertex1.x /= 5; vertex1.y /= 5; vertex1.z /= 5;
-                    vertex2.x /= 5; vertex2.y /= 5; vertex2.z /= 5;
-                    vertex3.x /= 5; vertex3.y /= 5; vertex3.z /= 5;
+                    vertex1.x /= 2; vertex1.y /= 2; vertex1.z /= 2;
+                    vertex2.x /= 2; vertex2.y /= 2; vertex2.z /= 2;
+                    vertex3.x /= 2; vertex3.y /= 2; vertex3.z /= 2;
 
                     vertex1 = multiply_matrix_vector(model_view_projection_matrix, vertex1);
                     vertex2 = multiply_matrix_vector(model_view_projection_matrix, vertex2);
@@ -587,32 +564,36 @@ int main(int argc, char* argv[])
                     vertex2 = multiply_matrix_vector(view_matrix, vertex2);
                     vertex3 = multiply_matrix_vector(view_matrix, vertex3);
 
-                    vertex1.x /= vertex1.w;
-                    vertex1.y /= vertex1.w;
+                    vertex1.x /= -vertex1.w;
+                    vertex1.y /= -vertex1.w;
+                    vertex1.z /= -vertex1.w;
 
-                    vertex2.x /= vertex2.w;
-                    vertex2.y /= vertex2.w;
+                    vertex2.x /= -vertex2.w;
+                    vertex2.y /= -vertex2.w;
+                    vertex2.z /= -vertex2.w;
 
-                    vertex3.x /= vertex3.w;
-                    vertex3.y /= vertex3.w;
+                    vertex3.x /= -vertex3.w;
+                    vertex3.y /= -vertex3.w;
+                    vertex3.z /= -vertex3.w;
+
                 }
 
                 if (vertex3.w <= 1 || vertex2.w <= 1 || vertex1.w <= 1) continue;
 
-                mesh_t triangle = { 
-                                        
+                mesh_t triangle = {                                  
                         vertex1.x, vertex1.y, vertex1.z, vertex1.w,
                         vertex2.x, vertex2.y, vertex2.z, vertex2.w,
                         vertex3.x, vertex3.y, vertex3.z, vertex3.w
                         ,
-                        model.meshes[i].uvs[0] / -vertex1.w,
-                        model.meshes[i].uvs[1] / -vertex1.w,
-                        model.meshes[i].uvs[2] / -vertex2.w,
-                        model.meshes[i].uvs[3] / -vertex2.w,
-                        model.meshes[i].uvs[4] / -vertex3.w,
-                        model.meshes[i].uvs[5] / -vertex3.w
+                        model.meshes[i].uvs[0]/vertex1.z,
+                        model.meshes[i].uvs[1]/vertex1.z,
+                        model.meshes[i].uvs[2]/vertex2.z,
+                        model.meshes[i].uvs[3]/vertex2.z,
+                        model.meshes[i].uvs[4]/vertex3.z,
+                        model.meshes[i].uvs[5]/vertex3.z
                 };
-                drawTriangle(triangle, software_renderer, FILLED, model.model_texture);
+
+                drawTriangle(triangle, software_renderer, FILLED, model.model_texture, normal);
             }
         }
 
