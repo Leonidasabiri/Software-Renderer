@@ -1,4 +1,5 @@
 #pragma once
+#include "math.h"
 
 typedef struct
 {
@@ -20,13 +21,22 @@ typedef enum
     UVS_COLOR,
     NORMALS_COLOR,
     SPECULAR_COLOR,
-    ALBEDO_COLOR
+    ALBEDO_COLOR,
+    SHADED_COLOR
 }render_pass_view_t;
 
 typedef struct
 {
     float r, g, b, a;
 } color_t;
+
+
+typedef struct
+{
+    vector4_t     position;
+    color_t       color;
+    float         intensity;
+}light_t;
 
 typedef struct
 {
@@ -47,5 +57,12 @@ typedef struct
     frame_buffer_t     frame_buffer;
     depth_buffer_t     depth_buffer;
     render_pass_view_t pass_display;
+    light_t            light_sources[100];  // max light source predetermined
+    int                light_count;
 }renderer_t;
 
+typedef struct
+{
+    mesh_t* meshes;
+    texture_t   model_texture;
+}model_t;
