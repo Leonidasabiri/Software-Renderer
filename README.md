@@ -28,3 +28,16 @@ Still a work in progress.
 |:-------------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------:|
 |<img width="500" height="520" alt="Screenshot from 2025-11-18 03-22-46" src="https://github.com/user-attachments/assets/ac9a2553-289c-490a-badc-41a88c5cf0ce" />|<img width="501" height="513" alt="Screenshot from 2025-11-18 03-25-17" src="https://github.com/user-attachments/assets/375a4d22-10e4-4637-a50d-37aa8a4d7662" />|
 <img width="722" height="759" alt="Screenshot from 2025-11-18 04-10-30" src="https://github.com/user-attachments/assets/d714da9c-0693-4767-967c-b6629620bc32" />
+
+### Meshes normals view
+
+<img width="510" height="462" alt="suzan_n" src="https://github.com/user-attachments/assets/f95e65d6-3e41-4e04-b1ca-c6402d0cdfb2" />
+
+### Phong shading
+
+<img width="486" height="472" alt="suzen_l" src="https://github.com/user-attachments/assets/c8f1b640-f87c-4416-985e-58bb3a435f45" />
+
+
+
+
+
