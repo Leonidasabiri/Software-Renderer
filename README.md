@@ -8,8 +8,7 @@ Still a work in progress.
 - [X] Perspective projection
 - [X] Perspective correct texturing
 - [X] Correct depth testing
-- [ ] Mipmaps
-- [ ] Phong shading model
+- [X] Phong shading model
 - [ ] Shadows
 - [ ] Normal maps with tangent space
 - [ ] SSAO (Screen Space Ambient Occlusion)
