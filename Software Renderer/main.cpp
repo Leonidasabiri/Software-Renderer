@@ -164,15 +164,14 @@ int main(int argc, char* argv[])
 			}
 		}
 		{
-			// reset depth buffer
+			// clear window & and reset depth buffer
 			for (int i = 0; i < height; i++)
-				for (int j = 0; j < width; j++)
+				for (int j = 0; j < width; j++)				
+				{
 					software_renderer.depth_buffer.depth_pixels[i * width + j] = 100000;
-
-			// clear window
-			for (int i = 0; i < height; i++)
-				for (int j = 0; j < width; j++)
 					draw_pixel(j, i, software_renderer.frame_buffer.pixels, width, height, { 0, 0, 0, 255 });
+				}
+
 
 			for (int i = 0; i < faces_numbers; i++)
 			{                
