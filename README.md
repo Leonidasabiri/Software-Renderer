@@ -4,14 +4,20 @@
 
 Still a work in progress.
 
-### Features:
+### Features in progress:
 - [X] Perspective projection
 - [X] Perspective correct texturing
 - [X] Correct depth testing
 - [X] Phong shading model
 - [ ] Shadows
 - [ ] Normal maps with tangent space
+
+## Ambisious features to add if possible:
+ When I make sure that the base is in a perfect state I'll try to move on to these later.
+- [ ] vectorizing all the operations of the renderer with SIMD
+- [ ] global illumination with spherical harmonics
 - [ ] SSAO (Screen Space Ambient Occlusion)
+- thinking about and researching the rest of this list
 
 ### Neutral color preview
 |                                     utah teapot                                       |           Suzan head   (the infamous CGI monkey) 
