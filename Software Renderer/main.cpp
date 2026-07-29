@@ -2,7 +2,7 @@
 #include <SDL.h>
 #include <math.h>
 #include <stdio.h>
-#include "model_parser.c"
+#include "obj_parse/obj_parse_tools.h"
 #include "renderer.h"
 #include "math.h"
 #include "stb_image.h"
@@ -59,9 +59,9 @@ int main(int argc, char* argv[])
     software_renderer.depth_buffer.depth_pixels = (float*)malloc(width * height * sizeof(float));
     software_renderer.pass_display = DIFFUSE_COLOR;
 
-    model.meshes = extract_meshes("models/jack.obj");
+    model.meshes = extract_meshes("models/cube.obj");
     int w, h, channels;
-    model.model_texture.texture = stbi_load("models/uv1.png", &w, &h, &channels, 4);
+    model.model_texture.texture = stbi_load("models/default.png", &w, &h, &channels, 4);
     model.model_texture.width = w;
     model.model_texture.height = h;
 
@@ -164,21 +164,21 @@ int main(int argc, char* argv[])
 			}
 		}
 		{
-			// reset depth buffer
-			for (int i = 0; i < height; i++)
-				for (int j = 0; j < width; j++)
-					software_renderer.depth_buffer.depth_pixels[i * width + j] = 100000;
-
 			// clear window
 			for (int i = 0; i < height; i++)
-				for (int j = 0; j < width; j++)
+				for (int j = 0; j < width; j++)				
+				{
+					software_renderer.depth_buffer.depth_pixels[i * width + j] = 100000;
 					draw_pixel(j, i, software_renderer.frame_buffer.pixels, width, height, { 0, 0, 0, 255 });
+				}
 
-			for (int i = 0; i < faces_numbers; i++)
+			for (int i = 0; i < model.meshes->faces_numbers; i++)
 			{                
 				vector4_t vertex1 = multiply_matrix_vector(identity_matrix, { model.meshes[i].vertecies[0], model.meshes[i].vertecies[1], model.meshes[i].vertecies[2], model.meshes[i].vertecies[3] });
 				vector4_t vertex2 = multiply_matrix_vector(identity_matrix, { model.meshes[i].vertecies[4], model.meshes[i].vertecies[5], model.meshes[i].vertecies[6], model.meshes[i].vertecies[7] });
 				vector4_t vertex3 = multiply_matrix_vector(identity_matrix, { model.meshes[i].vertecies[8], model.meshes[i].vertecies[9], model.meshes[i].vertecies[10], model.meshes[i].vertecies[11]});
+
+				
 
 				{
 					vertex1 = multiply_matrix_vector(model_view_projection_matrix, vertex1);

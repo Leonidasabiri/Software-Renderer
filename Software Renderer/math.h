@@ -1,4 +1,5 @@
 #pragma once
+
 typedef struct
 {
     float x, y;
@@ -13,6 +14,21 @@ typedef struct
 {
     vector4_t x, y, z, w;
 } matrix4_t;
+
+vector2_t convert_to_screen_space(vector4_t pos, int width, int height)
+{
+    vector2_t screen_space;
+
+    screen_space.x =  (pos.x + 1) * width/2;
+    screen_space.y = (-pos.y + 1) * height/2;
+
+    return screen_space;
+}
+
+vector4_t multiply_vector_scalar(vector4_t vector, float scalar)
+{
+    return {vector.x * scalar, vector.y * scalar, vector.z * scalar, vector.w * scalar};
+}
 
 matrix4_t multiply_matrix_matrix(matrix4_t matrix4_1, matrix4_t matrix4_2)
 {
@@ -132,5 +148,10 @@ vector4_t normalize_vector(vector4_t vector)
 float triangle_surface(vector2_t pos1, vector2_t pos2, vector2_t pos3)
 {
     return cross_product_2d(sub_vector(pos1, pos2), sub_vector(pos3, pos2)) * 1 / 2;
+}
+
+vector4_t reflection(vector4_t normal, vector4_t incoming_vector)
+{
+    return sub_vector4(incoming_vector, multiply_vector_scalar(normal, dot_product(incoming_vector, normal) * 2));
 }
 

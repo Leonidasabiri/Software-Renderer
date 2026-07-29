@@ -1,4 +1,3 @@
-#include "model_parser.c"
 #include "shading.cpp"
 
 void drawLine(vector2_t point1, vector2_t point2, int* buffer, int width, int height, color_t color)
@@ -110,6 +109,14 @@ void drawTriangle(mesh_t triangle, renderer_t software_renderer,
 		}
 	}
 
+	// NOTE: This is a dumb way to fix the problem of gaps between shared edges
+	points[0].x = float(int(points[0].x));
+	points[0].y = float(int(points[0].y));
+	points[1].x = float(int(points[1].x));
+	points[1].y = float(int(points[1].y));
+	points[2].x = float(int(points[2].x));
+	points[2].y = float(int(points[2].y));
+
 	float xintersect = (points[0].x + (points[1].y - points[0].y)/(points[2].y - points[0].y) * (points[2].x - points[0].x));
 
 	float startx = points[0].x, endx = points[0].x;
@@ -134,6 +141,50 @@ void drawTriangle(mesh_t triangle, renderer_t software_renderer,
 			drawLine(point3, point1, software_renderer.frame_buffer.pixels, width, height, color[0]);
 			break;
 		case FILLED:
+			for (float y = (scanline_start_y); y < scanline_end_y; y++)
+			{
+				float x = startx;
+				if (startx > endx) x = endx;
+				for (int i = 0; i < fabs(startx - endx); i++)
+				{
+					vector2_t point = { x, y };
+					float surface1 = triangle_surface(point, point3, point2)/full_surface;
+					float surface2 = triangle_surface(point, point2, point1)/full_surface;
+					float surface3 = triangle_surface(point, point1, point3)/full_surface;
+
+					float z_interpolate = 1.0 / (surface1/z1 + surface3/z2 + surface2/z3);
+					float z_pos = (surface1*vertex1.w + surface2*vertex3.w + surface3*vertex2.w);
+
+					float uvx_interpolate = (surface1 * triangle.uvs[1] + surface2 * triangle.uvs[5] + surface3 * triangle.uvs[3]) * z_interpolate * model_texture.width;
+					float uvy_interpolate = (surface1 * triangle.uvs[0] + surface2 * triangle.uvs[4] + surface3 * triangle.uvs[2]) * z_interpolate * model_texture.height;
+
+					software_renderer.current_screen_pos = {x, y};
+					software_renderer.current_uvs = {uvx_interpolate, uvy_interpolate};
+					software_renderer.current_z_value = z_interpolate;
+
+					color_t final_colort = fetch_pixel(model_texture.texture,
+						uvx_interpolate,
+						uvy_interpolate,
+						model_texture.width, model_texture.height);
+
+					vector4_t pixel_world_pos = screen_to_world_pos(software_renderer, {point.x, point.y, 0, z_pos});
+
+					pixel_shading(software_renderer, pixel_world_pos, normal, model_texture);
+					x++;
+				}
+				startx += d1;
+				endx += d2;
+			}
+			{
+				scanline_start_y = scanline_end_y;
+				scanline_end_y = points[2].y;
+				startx = points[1].x;
+				endx = xintersect;
+				dx1 = points[1].x - points[2].x, dy1 = points[1].y - points[2].y;
+				dx2 = xintersect - points[2].x, dy2 = points[1].y - points[2].y;
+				d1 = dx1 / dy1;
+				d2 = dx2 / dy2;
+			}
 			for (float y = scanline_start_y; y < scanline_end_y; y++)
 			{
 				float x = startx;
@@ -167,20 +218,6 @@ void drawTriangle(mesh_t triangle, renderer_t software_renderer,
 				}
 				startx += d1;
 				endx += d2;
-				if (y >= scanline_end_y - 1)
-				{
-					if (scanline_end_y != points[2].y)
-					{
-						scanline_start_y = scanline_end_y;
-						scanline_end_y = points[2].y;
-						startx = points[1].x;
-						endx = xintersect;
-						dx1 = points[1].x - points[2].x, dy1 = points[1].y - points[2].y;
-						dx2 = xintersect - points[2].x, dy2 = points[1].y - points[2].y;
-						d1 = dx1 / dy1;
-						d2 = dx2 / dy2;
-					}
-				}
 			}
 			break;
 		default:

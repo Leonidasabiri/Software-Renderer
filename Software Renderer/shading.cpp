@@ -5,7 +5,7 @@
 
 void draw_pixel(int x, int y, int* buffer, int width, int height, color_t color)
 {
-    if (x < 0 || y < 0 || x > width || y > height)
+    if (x < 0 || y < 0 || x > width - 1 || y > height)
         return;
     int pos = (x + y * width);
     buffer[pos] = (int)color.r << 24 | (int)color.g << 16 | (int)color.b << 8 | (int)color.a;
@@ -63,9 +63,9 @@ void pixel_shading(renderer_t software_renderer,
     final_colort.g = final_colort.g + col > 255 ? 255 : final_colort.g + col < 0 ? 0 : final_colort.g + col;
     final_colort.b = final_colort.b + col > 255 ? 255 : final_colort.b + col < 0 ? 0 : final_colort.b + col;
 
-    final_colort.r = final_colort.r + col_s > 255 ? 255 : final_colort.r + col_s < 0 ? 0 : final_colort.r + col_s;
-    final_colort.g = final_colort.g + col_s > 255 ? 255 : final_colort.g + col_s < 0 ? 0 : final_colort.g + col_s;
-    final_colort.b = final_colort.b + col_s > 255 ? 255 : final_colort.b + col_s < 0 ? 0 : final_colort.b + col_s;
+    // final_colort.r = final_colort.r + col_s > 255 ? 255 : final_colort.r + col_s < 0 ? 0 : final_colort.r + col_s;
+    // final_colort.g = final_colort.g + col_s > 255 ? 255 : final_colort.g + col_s < 0 ? 0 : final_colort.g + col_s;
+    // final_colort.b = final_colort.b + col_s > 255 ? 255 : final_colort.b + col_s < 0 ? 0 : final_colort.b + col_s;
 
     color_world_pos.r = pixel_world_pos.x * 255;
     color_world_pos.g = pixel_world_pos.y * 255;
