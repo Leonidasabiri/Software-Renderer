@@ -164,13 +164,14 @@ int main(int argc, char* argv[])
 			}
 		}
 		{
-			// clear window
+			// clear window & and reset depth buffer
 			for (int i = 0; i < height; i++)
 				for (int j = 0; j < width; j++)				
 				{
 					software_renderer.depth_buffer.depth_pixels[i * width + j] = 100000;
 					draw_pixel(j, i, software_renderer.frame_buffer.pixels, width, height, { 0, 0, 0, 255 });
 				}
+
 
 			for (int i = 0; i < model.meshes->faces_numbers; i++)
 			{                
