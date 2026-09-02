@@ -1,4 +1,4 @@
-# Medium renderer
+# Medium renderer - Software renderer attempt
 
  This is a simple software renderer written in C++ in C style using SDL just for window management and writting pixels to the framebuffer.
 
@@ -14,6 +14,7 @@ Still a work in progress.
 
 ## Ambisious features to add if possible:
  When I make sure that the base is in a perfect state I'll try to move on to these later.
+ Update: These features are still in mind for the next rewrite of this project.
 - [ ] vectorizing all the operations of the renderer with SIMD
 - [ ] global illumination with spherical harmonics
 - [ ] SSAO (Screen Space Ambient Occlusion)
