@@ -2,8 +2,6 @@
 
  This is a simple software renderer written in C++ in C style using SDL just for window management and writting pixels to the framebuffer.
 
-Still a work in progress.
-
 ### Features in progress:
 - [X] Perspective projection
 - [X] Perspective correct texturing
